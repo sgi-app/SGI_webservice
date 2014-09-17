@@ -5,6 +5,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import com.sun.jersey.core.util.Base64;
+
 @Path("/login")
 public class Login {
 	@GET
@@ -12,8 +14,13 @@ public class Login {
 	@Produces(MediaType.APPLICATION_JSON)
 	public String doLogin(@QueryParam("username") String uname, @QueryParam("password") String pwd){
 		String response="";
-		System.out.println("Username received="+uname+" passowrd received="+pwd);
-		if(checkCredentials(uname,pwd)){
+		System.out.println(" received Username="+uname+" password="+pwd);
+		String d_uname,d_pwd;
+		d_uname=new String(Base64.decode(uname)).trim();
+		d_pwd=new String(Base64.decode(pwd)).trim();
+		System.out.println("decoded Username="+d_uname+" password="+d_pwd);
+		
+		if(checkCredentials(d_uname,d_pwd)){
 			response=Utility.ConstructJSON("login", true);
 			System.out.println("in if");
 		}
@@ -23,7 +30,6 @@ public class Login {
 		}
 		return response;
 	}
-	
 	public boolean checkCredentials(String username,String pwd){
 			return DBConnection.checkLogin(username, pwd);
 	}
