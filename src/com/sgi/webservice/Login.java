@@ -12,7 +12,7 @@ public class Login {
 	@GET
 	@Path("/dologin")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String doLogin(@QueryParam("username") String uname, @QueryParam("password") String pwd){
+	public String doLogin(@QueryParam(Constants.PARAMETER_USERNAME) String uname, @QueryParam(Constants.PARAMETER_PASSWORD) String pwd,@QueryParam("is_faculty") boolean is_faculty){
 		String response="";
 		System.out.println(" received Username="+uname+" password="+pwd);
 		String d_uname,d_pwd;
@@ -20,8 +20,8 @@ public class Login {
 		d_pwd=new String(Base64.decode(pwd)).trim();
 		System.out.println("decoded Username="+d_uname+" password="+d_pwd);
 		
-		if(checkCredentials(d_uname,d_pwd)){
-			response=Utility.ConstructJSON("login", true); //haha mai popo hu jshgjsdhf
+		if(checkCredentials(d_uname,d_pwd,is_faculty)){
+			response=Utility.ConstructJSON("login", true);
 			System.out.println("in if");
 		}
 		else{
@@ -30,7 +30,7 @@ public class Login {
 		}
 		return response;
 	}
-	public boolean checkCredentials(String username,String pwd){
-			return DBConnection.checkLogin(username, pwd);
+	public boolean checkCredentials(String username,String pwd,boolean is_faculty){
+			return DBConnection.checkLogin(username, pwd,is_faculty);
 	}
 }
