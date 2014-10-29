@@ -19,5 +19,10 @@ public interface Constants {
 	public static String PARAMETER_USERNAME="username";
 	public static String PARAMETER_QUERY_ID="query_id";
 	public static String PARAMETER_TOKEN="token";
+	public static String PARAMETER_USER_TYPE="user_type";
+	public static String PARAMETER_DEPARTMENT="department";
+	public static String PARAMETER_YEAR="year";
+	
+	
 }
 

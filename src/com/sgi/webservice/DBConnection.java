@@ -25,7 +25,6 @@ public class DBConnection {
 		Connection conn=null;
 		userid=new String(Base64.decode(userid)).trim();
 		token=new String(Base64.decode(token)).trim();
-		System.out.println(token);
 		try{
 			conn=getConnection();
 			String query="select count(*) from login where "+Constants.login.COLUMN_ID+"='"+userid+"' and "+Constants.login.COLUMN_TOKEN+"='"+token+"'";
@@ -62,7 +61,7 @@ public class DBConnection {
 			ResultSet rs=stm.executeQuery(query);
 			if(rs.next()){
 				if(Utility.sha1(rs.getString(1)).equals(pwd)){
-					query="Update "+Constants.DB_LOGIN_TABLE+" set token='"+pwd+"' where "+Constants.login.COLUMN_ID+"='"+user+"';";
+					query="Update "+Constants.DB_LOGIN_TABLE+" set token='"+Utility.sha1(pwd+Login.counter)+"' where "+Constants.login.COLUMN_ID+"='"+user+"';";
 					if(stm.executeUpdate(query)==1)
 						return true;
 					else
