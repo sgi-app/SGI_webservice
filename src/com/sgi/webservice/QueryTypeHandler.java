@@ -11,6 +11,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.sgi.constants.Constants;
+import com.sgi.dao.DBConnection;
+
 
 @Path("/query")
 public class QueryTypeHandler {
@@ -20,16 +23,6 @@ public class QueryTypeHandler {
 	@Produces(MediaType.APPLICATION_JSON)
 	public String type_resolver(@QueryParam(Constants.PARAMETER_USERNAME) String userid,@QueryParam(Constants.PARAMETER_TOKEN) String token,@QueryParam(Constants.PARAMETER_USER_TYPE) boolean student,@QueryParam(Constants.PARAMETER_DEPARTMENT) String department,@QueryParam(Constants.PARAMETER_YEAR) int year){
 		if(DBConnection.authorizeUser(userid, token)){
-			/*
-			switch(query_id){
-			case 0:
-				System.out.println("get 0");
-				return send_student_list();
-			case 1:
-				System.out.println("get 1");
-				return send_faculty_list();
-			}
-			*/
 			if(student){
 				
 				return send_student_list(year,department);
@@ -44,14 +37,6 @@ public class QueryTypeHandler {
 			System.out.println("Somting went wrong");
 			return null;
 		}
-	}
-	
-	@GET
-	@Path("/run")
-	public int runn(){
-		Thread th=new Thread(new looper());
-		th.run();
-		return 1;
 	}
 
 	public String send_faculty_list(String department){
@@ -77,15 +62,7 @@ public class QueryTypeHandler {
 			return null;
 		}
 	}
-	class looper implements Runnable{
-		public void run() {
-			while(true){
-				System.out.println("Looping");
-				
-			}
-			
-		}
-	}
+	
 	public String send_student_list(int year,String department){
 		try{
 		Connection conn=DBConnection.getConnection();

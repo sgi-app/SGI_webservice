@@ -1,4 +1,4 @@
-package com.sgi.webservice;
+package com.sgi.dao;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -6,13 +6,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import com.sgi.constants.Constants;
+import com.sgi.webservice.Login;
+import com.sgi.webservice.Utility;
 import com.sun.jersey.core.util.Base64;
 
 public class DBConnection {
 	public static Connection getConnection(){
 		Connection con=null;
 		try{
-			Class.forName(Constants.DB_CLASS);
+			Class.forName(com.sgi.constants.Constants.DB_CLASS);
 			con=DriverManager.getConnection(Constants.DB_URL);
 			return con;
 		}catch(Exception e){
@@ -20,7 +23,7 @@ public class DBConnection {
 			return null;
 		}
 	}
-	
+//	public static ArrayList<String>
 	public static boolean authorizeUser(String userid,String token){
 		Connection conn=null;
 		userid=new String(Base64.decode(userid)).trim();

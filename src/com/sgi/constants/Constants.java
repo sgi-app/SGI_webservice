@@ -1,4 +1,4 @@
-package com.sgi.webservice;
+package com.sgi.constants;
 
 public interface Constants {
 	public static String DB_CLASS="com.mysql.jdbc.Driver";
@@ -8,11 +8,11 @@ public interface Constants {
 	public static String DB_LOGIN_TABLE="login";
 	public static String DB_URL="jdbc:mysql://localhost/"+DB_NAME+"?user="+DB_USER+"&password="+DB_PASSWORD;
 	public class login{
-		static String COLUMN_ID="user_id";
-		static String COLUMN_TOKEN="token";
-		static String COLUMN_PASSWORD="pswd";
-		static String COLUMN_ONLINE="online";
-		static String COLUMN_ISFACULTY="is_faculty";
+		public static String COLUMN_ID="user_id";
+		public static String COLUMN_TOKEN="token";
+		public static String COLUMN_PASSWORD="pswd";
+		public static String COLUMN_ONLINE="online";
+		public static String COLUMN_ISFACULTY="is_faculty";
 	}
 	
 	public static String PARAMETER_PASSWORD="password";

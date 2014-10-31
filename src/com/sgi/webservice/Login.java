@@ -5,6 +5,9 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
+import com.sgi.constants.Constants;
+import com.sgi.dao.DBConnection;
 import com.sun.jersey.core.util.Base64;
 
 @Path("/login")
@@ -32,6 +35,19 @@ public class Login {
 			System.out.println("in else");
 		}
 		return response;
+	}
+	@GET
+	@Path("/getInitial")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getInitial(@QueryParam(Constants.PARAMETER_USERNAME) String userid,@QueryParam(Constants.PARAMETER_TOKEN) String token){
+		if(DBConnection.authorizeUser(userid, token)){
+			
+			return null;
+		}
+		else{
+			System.out.println("User not valid");
+			return null;
+		}
 	}
 	public boolean checkCredentials(String username,String pwd,boolean is_faculty){
 			return DBConnection.checkLogin(username, pwd,is_faculty);
