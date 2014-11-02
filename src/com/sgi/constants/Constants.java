@@ -1,19 +1,10 @@
 package com.sgi.constants;
 
 public interface Constants {
-	public static String DB_CLASS="com.mysql.jdbc.Driver";
-	public static String DB_NAME="sgi_app";	
-	public static String DB_USER="root";
-	public static String DB_PASSWORD="1234";
-	public static String DB_LOGIN_TABLE="login";
-	public static String DB_URL="jdbc:mysql://localhost/"+DB_NAME+"?user="+DB_USER+"&password="+DB_PASSWORD;
-	public class login{
-		public static String COLUMN_ID="user_id";
-		public static String COLUMN_TOKEN="token";
-		public static String COLUMN_PASSWORD="pswd";
-		public static String COLUMN_ONLINE="online";
-		public static String COLUMN_ISFACULTY="is_faculty";
-	}
+
+	
+	
+//	public static String DB_LOGIN_TABLE="login";
 	
 	public static String PARAMETER_PASSWORD="password";
 	public static String PARAMETER_USERNAME="username";
@@ -21,8 +12,20 @@ public interface Constants {
 	public static String PARAMETER_TOKEN="token";
 	public static String PARAMETER_USER_TYPE="user_type";
 	public static String PARAMETER_DEPARTMENT="department";
+	public static String PARAMETER_COURSE="course";
+	public static String PARAMETER_SECTION="section";
 	public static String PARAMETER_YEAR="year";
 	
-	
+	public static String FIRST_NAME="first_name";
+	public static String LAST_NAME="last_name";
+	public static String PROFILE_IMAGE="profile_image";
+	public static String L_ID="l_id";
+	public static String USER_ID="u_id";
+	public static String DEPARTMENT="department";
+	public static String STATE="state";
+	public static String YEAR="year";
+	public static String SECTION="section";
+	public static String COURSE="course";
+
 }
 
