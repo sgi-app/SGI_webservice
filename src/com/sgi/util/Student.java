@@ -10,6 +10,7 @@ public class Student {
 		String section;
 		String course;
 		int l_id;
+		
 		public StudentMin(String f_n,String l_n,int lid,String pu,String dp,int y,String sec,String cou){
 			f_name=f_n;
 			l_name=l_n;
@@ -21,18 +22,14 @@ public class Student {
 			year=y;
 		}
 	}
+	
 	public class StudentFull{
-		String f_name;
-		String l_name;
-		String branch;
-		String picUrl;
-		int year;
-		String section;
-		String course;
-		int l_id;
-		int state;
 		String user_id;
-		UserInfo info;
+		String u_roll_no;
+		public StudentFull(String ui,String roll){
+			user_id=ui;
+			u_roll_no=roll;
+		}
 	}
 	
 }

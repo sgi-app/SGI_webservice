@@ -55,6 +55,7 @@ public class Utility {
 				tmpobj.put(Constants.LAST_NAME,tmpusr.l_name);
 				tmpobj.put(Constants.PROFILE_IMAGE, tmpusr.picUrl);
 				tmpobj.put(Constants.DEPARTMENT,tmpusr.dep);
+				tmpobj.put(Constants.COURSE,tmpusr.course);
 				tmpobj.put(Constants.L_ID, tmpusr.l_id);
 				obja.put(tmpobj);
 			}
