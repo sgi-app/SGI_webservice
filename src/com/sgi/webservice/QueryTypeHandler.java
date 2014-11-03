@@ -54,15 +54,28 @@ public class QueryTypeHandler {
 		return 1;
 	}
 
-	public String send_faculty_list(String department){
+	public String send_faculty_list(String course,String department){
 		try{
 		Connection conn=DBConnection.getConnection();
 		String query;
-		if(department.equalsIgnoreCase("All"))
-			query="select f_name,l_name,user_id,department,profile_url,is_online,p_mob from faculty join login on l_id=login.id join contact_info on usr_id=login.id order by f_name;";
-		else
-			query="select f_name,l_name,user_id,department,profile_url,is_online,p_mob from faculty join login on l_id=login.id join contact_info on usr_id=login.id where department='"+department+"' order by f_name;";
-		
+		if(course.equalsIgnoreCase("All"))
+			query="select f_name,l_name,user_id,branches.name,profile_url,is_online,p_mob from faculty "
+					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
+					+ "join branches on faculty.branch_id=branches.id order by f_name;";
+		else if(department.equalsIgnoreCase("All") ){
+			query="select f_name,l_name,user_id,branches.name,profile_url,is_online,p_mob from faculty "
+					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
+					+ "join branches on faculty.branch_id=branches.id order by f_name "
+					+ "join courses on branches.course_id=courses.id"
+					+ "where courses.name='"+course+"' order by f_name;";
+		}
+		else{			
+			query="select f_name,l_name,user_id,branches.name,profile_url,is_online,p_mob from faculty "
+					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
+					+ "join branches on faculty.branch_id=branches.id order by f_name "
+					+ "join courses on branches.course_id=courses.id"
+					+ "where courses.name='"+course+ "and branches.name="+department +"' order by f_name;";
+		}
 		Statement stm=conn.createStatement();
 		ResultSet rs=stm.executeQuery(query);
 		System.out.println(query);
