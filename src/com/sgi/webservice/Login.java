@@ -1,10 +1,20 @@
 package com.sgi.webservice;
 
-import javax.ws.rs.Path;
 import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import com.sgi.constants.Constants;
+import com.sgi.dao.DBConnection;
+import com.sgi.dao.DbStructure;
+import com.sgi.util.InitialData;
+import com.sgi.util.Utility;
 import com.sun.jersey.core.util.Base64;
 
 @Path("/login")
@@ -32,6 +42,72 @@ public class Login {
 			System.out.println("in else");
 		}
 		return response;
+	}
+	@GET
+	@Path("/getInitial")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getInitial(@QueryParam(Constants.PARAMETER_USERNAME) String userid,@QueryParam(Constants.PARAMETER_TOKEN) String token){
+		if(DBConnection.authorizeUser(userid, token)){
+			InitialData idata=DBConnection.getInitialData();
+			//make json data
+			
+			JSONArray resultobj=new JSONArray();
+			try {
+				JSONArray tmparry=new JSONArray();
+				for(InitialData.Courses c:idata.courses){
+					JSONObject obj=new JSONObject();
+					obj.put(DbStructure.COURSES.COLUMN_ID,c.id);
+					obj.put(DbStructure.COURSES.COLUMN_DURATION,c.duration);
+					obj.put(DbStructure.COURSES.COLUMN_NAME,c.name);
+					tmparry.put(obj);
+				}
+				resultobj.put(0,tmparry);
+				
+				tmparry=new JSONArray();
+				for(InitialData.Branches b:idata.branches){
+					
+					JSONObject obj=new JSONObject();
+					obj.put(DbStructure.BRANCHES.COLUMN_COURSE_ID,b.course_id);
+					obj.put(DbStructure.BRANCHES.COLUMN_ID,b.id);
+					obj.put(DbStructure.BRANCHES.COLUMN_NAME,b.name);
+					tmparry.put(obj);
+				}
+				resultobj.put(1,tmparry);
+				
+				tmparry=new JSONArray();
+				for(InitialData.Sections s:idata.sections){
+					
+					JSONObject obj=new JSONObject();
+					obj.put(DbStructure.SECTIONS.COLUMN_YEAR_ID,s.year_id);
+					obj.put(DbStructure.SECTIONS.COLUMN_ID,s.id);
+					obj.put(DbStructure.SECTIONS.COLUMN_NAME,s.name);
+					tmparry.put(obj);
+				}
+				resultobj.put(2,tmparry);
+				
+				tmparry=new JSONArray();
+				for(InitialData.Year y:idata.years){
+					
+					JSONObject obj=new JSONObject();
+					obj.put(DbStructure.YEAR.COLUMN_BRANCH_ID,y.branch_id);
+					obj.put(DbStructure.YEAR.COLUMN_ID,y.id);
+					obj.put(DbStructure.YEAR.COLUMN_YEAR,y.year);
+					tmparry.put(obj);
+				}
+				resultobj.put(3,tmparry);
+				
+				
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			System.out.println(resultobj.toString());
+			return resultobj.toString();
+			
+		}
+		else{
+			System.out.println("User not valid");
+			return null;
+		}
 	}
 	public boolean checkCredentials(String username,String pwd,boolean is_faculty){
 			return DBConnection.checkLogin(username, pwd,is_faculty);

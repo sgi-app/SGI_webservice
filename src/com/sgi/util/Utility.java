@@ -1,10 +1,14 @@
-package com.sgi.webservice;
+package com.sgi.util;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+
+import com.sgi.constants.Constants;
+import com.sgi.util.Faculty.FacultyMin;
+import com.sgi.util.Student.StudentMin;
 public class Utility {
 	public static String ConstructJSON(String tagr,boolean statusr,String msg){ 
 		JSONObject obj=new JSONObject();
@@ -29,31 +33,30 @@ public class Utility {
 		
 		for(Object str:data){
 			if(metadata.equalsIgnoreCase("student")){
-				Student tmpusr=(Student) str;
+				StudentMin tmpusr=(StudentMin) str;
 				JSONObject tmpobj=new JSONObject();
 				
-				tmpobj.put(Student.FIRST_NAME, tmpusr.f_name);
-				tmpobj.put(Student.LAST_NAME,tmpusr.l_name);
-				tmpobj.put(Student.PROFILE_IMAGE, tmpusr.picUrl);
-				tmpobj.put(Student.DEPARTMENT,tmpusr.branch);
-				tmpobj.put(Student.YEAR, tmpusr.year);
-				tmpobj.put(Student.ID, tmpusr.id);
-				tmpobj.put(Student.SECTION, tmpusr.section);
-				tmpobj.put(Student.STATE, tmpusr.state);
+				tmpobj.put(Constants.FIRST_NAME, tmpusr.f_name);
+				tmpobj.put(Constants.LAST_NAME,tmpusr.l_name);
+				tmpobj.put(Constants.L_ID, tmpusr.l_id);
+				tmpobj.put(Constants.PROFILE_IMAGE, tmpusr.picUrl);
+				tmpobj.put(Constants.DEPARTMENT,tmpusr.branch);
+				tmpobj.put(Constants.YEAR, tmpusr.year);
+				tmpobj.put(Constants.SECTION, tmpusr.section);
+				tmpobj.put(Constants.COURSE, tmpusr.course);
 				
 				obja.put(tmpobj);
 			}
 			else{
-				Faculty tmpusr=(Faculty)str;
+				FacultyMin tmpusr=(FacultyMin)str;
 				JSONObject tmpobj=new JSONObject();
 		
-				tmpobj.put(Faculty.FIRST_NAME, tmpusr.f_name);
-				tmpobj.put(Faculty.LAST_NAME,tmpusr.l_name);
-				tmpobj.put(Faculty.PROFILE_IMAGE, tmpusr.picUrl);
-				tmpobj.put(Faculty.DEPARTMENT,tmpusr.dep);
-				tmpobj.put(Faculty.ID, tmpusr.id);
-				tmpobj.put(Faculty.STATE, tmpusr.state);
-				tmpobj.put(Faculty.MOBILE, tmpusr.mob);
+				tmpobj.put(Constants.FIRST_NAME, tmpusr.f_name);
+				tmpobj.put(Constants.LAST_NAME,tmpusr.l_name);
+				tmpobj.put(Constants.PROFILE_IMAGE, tmpusr.picUrl);
+				tmpobj.put(Constants.DEPARTMENT,tmpusr.dep);
+				tmpobj.put(Constants.COURSE,tmpusr.course);
+				tmpobj.put(Constants.L_ID, tmpusr.l_id);
 				obja.put(tmpobj);
 			}
 		}
