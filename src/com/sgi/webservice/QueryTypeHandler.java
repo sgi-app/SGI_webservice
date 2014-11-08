@@ -125,7 +125,7 @@ public class QueryTypeHandler {
 					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
 					+ "join branches on faculty.branch_id=branches.id order by f_name "
 					+ "join courses on branches.course_id=courses.id"
-					+ "where courses.name='"+course+ "and branches.name="+department +"' order by f_name;";
+					+ "where courses.name='"+course+"' and branches.name='"+department +"' order by f_name;";
 		}*/
 
 			query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id=branches.id join courses on course_id=courses.id";
