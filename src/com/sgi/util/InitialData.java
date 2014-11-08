@@ -9,6 +9,7 @@ public class InitialData {
 	public ArrayList<Sections> sections=new ArrayList<Sections>();
 	public ArrayList<Year> years=new ArrayList<Year>();
 	
+	
 	public static class Courses{
 		public int id;
 		public String name;
@@ -29,5 +30,6 @@ public class InitialData {
 		public int branch_id;
 		public int year;
 	}
+	
 	
 }
