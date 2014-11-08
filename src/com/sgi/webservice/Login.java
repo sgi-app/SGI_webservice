@@ -34,11 +34,11 @@ public class Login {
 		if(checkCredentials(d_uname,d_pwd,is_faculty)){
 			token=Utility.getToken(d_pwd+counter);
 			counter++;
-			response=Utility.ConstructJSON("login", true,token);
+			response=Utility.ConstructJSON("login", true,d_uname,is_faculty,token);
 			System.out.println("in if");
 		}
 		else{
-			response=Utility.ConstructJSON("login", false, "Credentials not matched");
+			response=Utility.ConstructJSON("login", false, null,null,"Credentials not matched");
 			System.out.println("in else");
 		}
 		return response;

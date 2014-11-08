@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.sgi.util.InitialData;
+import com.sgi.util.Personal_info;
 import com.sgi.util.InitialData.Branches;
 import com.sgi.util.InitialData.Courses;
 import com.sgi.util.InitialData.Sections;
@@ -157,6 +158,54 @@ public class DBConnection {
 				ex.printStackTrace();
 			}
 		}
+	}
+	
+	public static void getPersonalInfo(String user_id,Boolean is_faculty){
+		String query;
+		Connection con=null;
+		try{
+			con=DBConnection.getConnection();
+			Statement stm=con.createStatement();			
+			if(is_faculty) {
+				query="select f_name,l_name,profile_url,branches.name from login "
+						+ "join faculty on login.id=faculty.l_id "
+						+ "join branches on faculty.branch_id=branches.id "
+						+ "where user_id='"+user_id +"';";
+			}
+			else {
+				query="select f_name,l_name,profile_url,sections.name,year.year from login "
+						+ "join students on login.id=students.l_id "
+						+ "join sections on students.section_id=sections.id "
+						+ "join year on sections.year_id=year.id "
+						+ "where user_id='"+user_id +"';";
+				}
+			ResultSet rs=stm.executeQuery(query);
+			System.out.println(query+" "+user_id);
+			while(rs.next()){
+				System.out.println(rs.getString(1));
+				Personal_info.f_name=rs.getString(1);
+				Personal_info.l_name=rs.getString(2);
+				Personal_info.profile_url=rs.getString(3);
+				if(is_faculty)
+					Personal_info.branch=rs.getString(4);
+				else
+				{
+					Personal_info.section=rs.getString(4);
+					Personal_info.year=rs.getString(5);
+				}
+			}
+			
+			}catch (SQLException e) {
+				e.printStackTrace();
+			}
+			finally{
+				try{
+					if(!con.isClosed())
+						con.close();
+				}catch(Exception ex){
+						ex.printStackTrace();
+					}
+				}
 	}
 	
 }

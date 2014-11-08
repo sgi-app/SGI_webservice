@@ -1,5 +1,6 @@
 package com.sgi.util;
 import java.security.MessageDigest;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 
 import org.codehaus.jettison.json.JSONArray;
@@ -7,22 +8,39 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import com.sgi.constants.Constants;
+import com.sgi.dao.DBConnection;
 import com.sgi.util.Faculty.FacultyMin;
 import com.sgi.util.Student.StudentMin;
 public class Utility {
-	public static String ConstructJSON(String tagr,boolean statusr,String msg){ 
+	public static String ConstructJSON(String tagr,boolean statusr,String user_id,Boolean is_faculty,String msg){ 
 		JSONObject obj=new JSONObject();
 		try{
 			obj.put("tag",tagr);
 			obj.put("status",statusr);
-			if(statusr)
+			if(statusr){
+				DBConnection.getPersonalInfo(user_id, is_faculty);
+				System.out.println("in status true");
+					System.out.print(Personal_info.f_name);
+					obj.put("f_name",Personal_info.f_name);
+					obj.put("l_name", Personal_info.l_name);
+					obj.put("profile_url",Personal_info.profile_url);
+					if(is_faculty){
+						obj.put("branch_fac", Personal_info.branch);						
+					}
+					else {
+						obj.put("section_stu",Personal_info.section);
+						obj.put("year", Personal_info.year);
+					}
+												
 				obj.put("token",msg);
+			}
 			else
 				obj.put("error",msg);
 		}
 		catch(Exception e){
-			return ConstructJSON(tagr,false,e.getMessage());
+			return ConstructJSON(tagr,false,null,null,e.getMessage());
 		}
+		System.out.println(obj.toString());
 		return obj.toString();  
 	}
 	
