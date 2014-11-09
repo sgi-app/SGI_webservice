@@ -17,6 +17,8 @@ import org.codehaus.jettison.json.JSONObject;
 
 import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
+import com.sgi.dao.DbConstants;
+import com.sgi.dao.DbStructure;
 import com.sgi.util.Faculty.FacultyMin;
 import com.sgi.util.Student.StudentMin;
 import com.sgi.util.Utility;
@@ -60,10 +62,28 @@ public class QueryTypeHandler {
 		
 		String query;
 		if(is_std){
-			query="select user_id,u_roll_no from students join login on l_id=login.id where l_id="+l_id;
+			query = DbConstants.SELECT + 
+					DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.COMMA +
+					DbStructure.STUDENTS.COLUMN_U_ROLL_NO + DbConstants.FROM +
+					DbStructure.STUDENTS.TABLE_NAME + DbConstants.JOIN + DbStructure.LOGIN.TABLE_NAME + DbConstants.ON + 
+					DbStructure.STUDENTS.COLUMN_LOGIN + DbConstants.EQUALS + DbStructure.LOGIN.COLUMN_ID + 
+					DbConstants.WHERE + DbStructure.STUDENTS.COLUMN_LOGIN + "='" + l_id + "';";
+					
+		//	query="select user_id,u_roll_no from students join login on l_id=login.id where l_id="+l_id;
 		}
 		else{
-			query="select user_id,street,city,state,pin,p_mob,h_mob from login join contact_info on login.id=usr_id where login.id="+l_id;
+			query = DbConstants.SELECT + 
+					DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.COMMA +
+					DbStructure.CONTACT_INFO.COLUMN_STREET + DbConstants.COMMA +
+					DbStructure.CONTACT_INFO.COLUMN_CITY + DbConstants.COMMA +
+					DbStructure.CONTACT_INFO.COLUMN_STATE + DbConstants.COMMA +
+					DbStructure.CONTACT_INFO.COLUMN_PIN + DbConstants.COMMA +
+					DbStructure.CONTACT_INFO.COLUMN_P_MOB + DbConstants.COMMA +
+					DbStructure.CONTACT_INFO.COLUMN_H_MOB + DbConstants.FROM +
+					DbStructure.LOGIN.TABLE_NAME + DbConstants.JOIN + DbStructure.CONTACT_INFO.TABLE_NAME + DbConstants.ON + 
+					DbStructure.LOGIN.TABLE_NAME+DbConstants.DOT+DbStructure.LOGIN.COLUMN_ID + DbConstants.EQUALS + DbStructure.CONTACT_INFO.COLUMN_USER_ID + 
+					DbConstants.WHERE + DbStructure.LOGIN.COLUMN_ID + "='" + l_id + "';";
+			//query="select user_id ,street,city,state,pin,p_mob,h_mob from login join contact_info on login.id=usr_id where login.id="+l_id;
 		}
 		
 		Connection con=DBConnection.getConnection();
@@ -127,12 +147,41 @@ public class QueryTypeHandler {
 					+ "join courses on branches.course_id=courses.id"
 					+ "where courses.name='"+course+"' and branches.name='"+department +"' order by f_name;";
 		}*/
-
-			query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id=branches.id join courses on course_id=courses.id";
+			query = DbConstants.SELECT +
+				DbStructure.FACULTY.COLUMN_F_NAME + DbConstants.COMMA +
+				DbStructure.FACULTY.COLUMN_L_NAME + DbConstants.COMMA +
+				DbStructure.FACULTY.COLUMN_PROFILE_URL + DbConstants.COMMA +
+				DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT + DbStructure.BRANCHES.COLUMN_NAME + DbConstants.COMMA +
+				DbStructure.COURSES.TABLE_NAME + DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + DbConstants.COMMA +
+				DbStructure.FACULTY.COLUMN_LOGIN_ID + DbConstants.FROM + 
+				DbStructure.FACULTY.TABLE_NAME + 
+				DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
+							DbStructure.FACULTY.COLUMN_BRANCH_ID + DbConstants.EQUALS +
+								DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT+DbStructure.BRANCHES.COLUMN_ID +  
+				DbConstants.JOIN + DbStructure.COURSES.TABLE_NAME + DbConstants.ON +
+							DbStructure.BRANCHES.COLUMN_COURSE_ID + DbConstants.EQUALS +
+								DbStructure.COURSES.TABLE_NAME + DbConstants.DOT+DbStructure.COURSES.COLUMN_ID + DbConstants.SEMICOLON;			
+		//	query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id=branches.id join courses on course_id=courses.id";
 		else
-			query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id=branches.id join courses on course_id=courses.id where courses.name='"+course+"' "+(department.equalsIgnoreCase("All")?"":"and branches.name='"+department+"'");
-		
-
+			query = DbConstants.SELECT +
+			DbStructure.FACULTY.COLUMN_F_NAME + DbConstants.COMMA +
+			DbStructure.FACULTY.COLUMN_L_NAME + DbConstants.COMMA +
+			DbStructure.FACULTY.COLUMN_PROFILE_URL + DbConstants.COMMA +
+			DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT + DbStructure.BRANCHES.COLUMN_NAME + DbConstants.COMMA +
+			DbStructure.COURSES.TABLE_NAME + DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + DbConstants.COMMA +
+			DbStructure.FACULTY.COLUMN_LOGIN_ID + DbConstants.FROM + 
+			DbStructure.FACULTY.TABLE_NAME + 
+			DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
+						DbStructure.FACULTY.COLUMN_BRANCH_ID + DbConstants.EQUALS +
+							DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT+DbStructure.BRANCHES.COLUMN_ID +  
+			DbConstants.JOIN + DbStructure.COURSES.TABLE_NAME + DbConstants.ON +
+						DbStructure.BRANCHES.COLUMN_COURSE_ID + DbConstants.EQUALS +
+							DbStructure.COURSES.TABLE_NAME + DbConstants.DOT+DbStructure.COURSES.COLUMN_ID +
+			DbConstants.WHERE + DbStructure.COURSES.TABLE_NAME + DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + 
+				DbConstants.EQUALS + "'" + course + "'" +
+					(department.equalsIgnoreCase("All")?"":"and"+ DbStructure.BRANCHES.COLUMN_NAME+"='"+department+"';");
+	//query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id	=branches.id join courses on course_id=courses.id 
+		//		"where courses.name='"+course+"' "+(department.equalsIgnoreCase("All")?"":"and branches.name='"+department+"'");
 		Statement stm=conn.createStatement();
 		ResultSet rs=stm.executeQuery(query);
 		System.out.println(query);
@@ -160,28 +209,44 @@ public class QueryTypeHandler {
 			query="select f_name,l_name,branch,profile_url,year,user_id,section,is_online from students join login on l_id=login.id where year="+year+";";
 		else
 			query="select f_name,l_name,branch,profile_url,year,user_id,section,is_online from students join login on l_id=login.id where year="+year+" and branch='"+department+"';";
-*/		query="select f_name,l_name,l_id,profile_url,branches.name,year.year,sections.name,courses.name from "
+*/		
+		query="select "+ DbStructure.STUDENTS.COLUMN_F_NAME+ DbConstants.COMMA + 
+				DbStructure.STUDENTS.COLUMN_L_NAME + DbConstants.COMMA +
+				DbStructure.STUDENTS.COLUMN_LOGIN + DbConstants.COMMA + 
+				DbStructure.STUDENTS.COLUMN_PROFILE + DbConstants.COMMA +
+				DbStructure.BRANCHES.TABLE_NAME+DbConstants.DOT + DbStructure.BRANCHES.COLUMN_NAME +DbConstants.COMMA +
+				DbStructure.YEAR.TABLE_NAME+DbConstants.DOT + DbStructure.YEAR.COLUMN_YEAR + DbConstants.COMMA +
+				DbStructure.SECTIONS.TABLE_NAME+DbConstants.DOT + DbStructure.SECTIONS.COLUMN_NAME + DbConstants.COMMA +
+				DbStructure.COURSES.TABLE_NAME+DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + 
+				DbConstants.FROM + DbStructure.STUDENTS.TABLE_NAME +
+				DbConstants.JOIN + DbStructure.SECTIONS.TABLE_NAME + DbConstants.ON +
+							DbStructure.STUDENTS.COLUMN_SECTION_ID + DbConstants.EQUALS +
+								DbStructure.SECTIONS.TABLE_NAME + DbConstants.DOT+DbStructure.SECTIONS.COLUMN_ID +
+				DbConstants.JOIN + DbStructure.YEAR.TABLE_NAME + DbConstants.ON +
+							DbStructure.SECTIONS.COLUMN_YEAR_ID + DbConstants.EQUALS +
+								DbStructure.YEAR.TABLE_NAME + DbConstants.DOT+DbStructure.YEAR.COLUMN_ID +
+				DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
+							DbStructure.YEAR.COLUMN_BRANCH_ID + DbConstants.EQUALS +
+								DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT+DbStructure.BRANCHES.COLUMN_ID +
+				DbConstants.JOIN + DbStructure.COURSES.TABLE_NAME + DbConstants.ON +
+							DbStructure.BRANCHES.COLUMN_COURSE_ID + DbConstants.EQUALS +
+								DbStructure.COURSES.TABLE_NAME + DbConstants.DOT+DbStructure.COURSES.COLUMN_ID +
+				((course.equalsIgnoreCase("All"))?" ":(("where "+DbStructure.COURSES.COLUMN_NAME+"='"+course+"'")+
+				((department.equalsIgnoreCase("All"))?" ":(" and "+DbStructure.BRANCHES.COLUMN_NAME+"='"+department+"'"))+
+				((year==0?" ":(" and "+DbStructure.YEAR.COLUMN_YEAR+"='"+year+"' ")))+
+				((department.equalsIgnoreCase("All") || year==0)?" ":(section.equalsIgnoreCase("All")?" ":(" and "+DbStructure.SECTIONS.COLUMN_NAME+"='"+section+"' ")))));
+
+		/*
+		query="select+ f_name,l_name,l_id,profile_url,branches.name,year.year,sections.name,courses.name from "
 		+"students join sections on section_id=sections.id "
 		+"join year on year_id=year.id "
 		+"join branches on branch_id=branches.id "
 		+"join courses on course_id=courses.id "
-		+(
-				(course.equalsIgnoreCase("All"))?" ":(
-														("where courses.name='"+course+"'")
-														+(
-																(department.equalsIgnoreCase("All"))?" ":(" and branches.name='"+department+"'")
-																)
-														+(
-																(year==0?" ":(" and year.year="+year+" "))
-																)
-														+(
-																(department.equalsIgnoreCase("All") || year==0)?" ":(
-																													section.equalsIgnoreCase("All")?" ":(" and sections.name='"+section+"' ")
-																													)
-																)
-													)
-		);
-
+		+((course.equalsIgnoreCase("All"))?" ":(("where courses.name='"+course+"'")
+		+((department.equalsIgnoreCase("All"))?" ":(" and branches.name='"+department+"'"))
+		+((year==0?" ":(" and year.year="+year+" ")))
+		+((department.equalsIgnoreCase("All") || year==0)?" ":(section.equalsIgnoreCase("All")?" ":(" and sections.name='"+section+"' ")))));
+		*/
 		System.out.println(query);
 		Statement stm=conn.createStatement();
 		ResultSet rs=stm.executeQuery(query);
