@@ -21,7 +21,6 @@ public class Utility {
 				DBConnection.getPersonalInfo(user_id, is_faculty);
 				System.out.println("in status true");
 					System.out.print(Personal_info.f_name);
-
 					obj.put(Constants.FIRST_NAME,Personal_info.f_name);
 					obj.put(Constants.LAST_NAME, Personal_info.l_name);
 					obj.put(Constants.PROFILE_IMAGE,Personal_info.profile_url);
