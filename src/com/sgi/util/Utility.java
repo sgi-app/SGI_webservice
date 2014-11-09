@@ -24,6 +24,7 @@ public class Utility {
 					obj.put("f_name",Personal_info.f_name);
 					obj.put("l_name", Personal_info.l_name);
 					obj.put("profile_url",Personal_info.profile_url);
+					
 					if(is_faculty){
 						obj.put("branch_fac", Personal_info.branch);						
 					}
