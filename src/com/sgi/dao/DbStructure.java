@@ -82,7 +82,7 @@ public class DbStructure {
 		String TABLE_NAME="contact_info";
 		 
 		String COLUMN_ID="id";
-		String COLUMN_USER_ID="user_id";
+		String COLUMN_USER_ID="usr_id";
 		String COLUMN_STREET="street";
 		String COLUMN_CITY="city";
 		String COLUMN_STATE="state";
