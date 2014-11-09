@@ -35,7 +35,9 @@ public class DBConnection {
 		token=new String(Base64.decode(token)).trim();
 		try{
 			conn=getConnection();
-			String query="select count(*) from login where "+DbStructure.LOGIN.COLUMN_USER_ID+"='"+userid+"' and "+DbStructure.LOGIN.COLUMN_TOKEN+"='"+token+"'";
+			String query=DbConstants.SELECT + "count(*)" + DbConstants.FROM 
+					+ DbStructure.LOGIN.TABLE_NAME+  DbConstants.WHERE +
+					DbStructure.LOGIN.COLUMN_USER_ID+"='"+userid+"' and "+DbStructure.LOGIN.COLUMN_TOKEN+"='"+token+"';";
 			System.out.println(query);
 			Statement stm=conn.createStatement();
 			ResultSet rs=stm.executeQuery(query);
@@ -127,14 +129,19 @@ public class DBConnection {
 		try {
 			conn=DBConnection.getConnection();
 			Statement stm=conn.createStatement();
-			String query="Select "+DbStructure.LOGIN.COLUMN_PASSWORD+" from "+DbStructure.LOGIN.TABLE_NAME+" where "+DbStructure.LOGIN.COLUMN_USER_ID+"='"+user.toUpperCase()+"' and "+DbStructure.LOGIN.COLUMN_IS_FACULTY+"='"+(is_faculty?'Y':'N')+"';";
+			String query="Select "+DbStructure.LOGIN.COLUMN_PASSWORD+" from " + 
+					DbStructure.LOGIN.TABLE_NAME + 
+						" where "+DbStructure.LOGIN.COLUMN_USER_ID+"='"+user.toUpperCase()+
+							"' and "+DbStructure.LOGIN.COLUMN_IS_FACULTY+"='"+(is_faculty?'Y':'N')+"';";
 			System.out.println(query);
 			System.out.println("matching\n"+pwd);
 			ResultSet rs=stm.executeQuery(query);
 			if(rs.next()){
 				System.out.println(Utility.sha1(rs.getString(1)));
 				if(Utility.sha1(rs.getString(1)).equals(pwd)){
-					query="Update "+DbStructure.LOGIN.TABLE_NAME+" set token='"+Utility.sha1(pwd+Login.counter)+"' where "+DbStructure.LOGIN.COLUMN_USER_ID+"='"+user+"';";
+					query="Update " + DbStructure.LOGIN.TABLE_NAME+
+							" set token='" + Utility.sha1(pwd+Login.counter)+
+							"' where " + DbStructure.LOGIN.COLUMN_USER_ID+"='" + user + "';";
 					System.out.println(query);
 					if(stm.executeUpdate(query)==1)
 						return true;
@@ -167,17 +174,37 @@ public class DBConnection {
 			con=DBConnection.getConnection();
 			Statement stm=con.createStatement();			
 			if(is_faculty) {
-				query="select f_name,l_name,profile_url,branches.name from login "
-						+ "join faculty on login.id=faculty.l_id "
-						+ "join branches on faculty.branch_id=branches.id "
-						+ "where user_id='"+user_id +"';";
+				query=DbConstants.SELECT +
+						DbStructure.FACULTY.COLUMN_F_NAME + DbConstants.COMMA + 
+						DbStructure.FACULTY.COLUMN_L_NAME + DbConstants.COMMA +
+						DbStructure.FACULTY.COLUMN_PROFILE_URL + DbConstants.COMMA +
+						DbStructure.BRANCHES.COLUMN_NAME + 
+						DbConstants.FROM + DbStructure.LOGIN.TABLE_NAME +
+						DbConstants.JOIN + DbStructure.FACULTY.TABLE_NAME + DbConstants.ON +
+							DbStructure.LOGIN.TABLE_NAME + DbConstants.DOT + DbStructure.LOGIN.COLUMN_ID + DbConstants.EQUALS +
+								DbStructure.FACULTY.TABLE_NAME + DbConstants.DOT+DbStructure.FACULTY.COLUMN_LOGIN_ID +
+						DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
+							DbStructure.FACULTY.TABLE_NAME + DbConstants.DOT + DbStructure.FACULTY.COLUMN_BRANCH_ID + DbConstants.EQUALS + 
+								DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT + DbStructure.BRANCHES.COLUMN_ID + 
+						DbConstants.WHERE + DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.EQUALS +"'" + user_id + "';"; 
 			}
 			else {
-				query="select f_name,l_name,profile_url,sections.name,year.year from login "
-						+ "join students on login.id=students.l_id "
-						+ "join sections on students.section_id=sections.id "
-						+ "join year on sections.year_id=year.id "
-						+ "where user_id='"+user_id +"';";
+				query=DbConstants.SELECT + 
+						DbStructure.STUDENTS.COLUMN_F_NAME + DbConstants.COMMA +
+						DbStructure.STUDENTS.COLUMN_L_NAME + DbConstants.COMMA + 
+						DbStructure.STUDENTS.COLUMN_PROFILE + DbConstants.COMMA + 
+						DbStructure.SECTIONS.COLUMN_NAME + DbConstants.COMMA + 
+						DbStructure.YEAR.COLUMN_YEAR +  DbConstants.FROM +  DbStructure.LOGIN.TABLE_NAME + 
+						DbConstants.JOIN + DbStructure.STUDENTS.TABLE_NAME + DbConstants.ON + 
+							DbStructure.LOGIN.TABLE_NAME+DbConstants.DOT+DbStructure.LOGIN.COLUMN_ID + DbConstants.EQUALS
+								+ DbStructure.STUDENTS.TABLE_NAME+DbConstants.DOT+DbStructure.STUDENTS.COLUMN_LOGIN +
+						DbConstants.JOIN + DbStructure.SECTIONS.TABLE_NAME + DbConstants.ON + 
+							DbStructure.STUDENTS.TABLE_NAME+DbConstants.DOT+DbStructure.STUDENTS.COLUMN_SECTION_ID + DbConstants.EQUALS
+								+ DbStructure.SECTIONS.TABLE_NAME+DbConstants.DOT+DbStructure.SECTIONS.COLUMN_ID +
+						DbConstants.JOIN + DbStructure.YEAR.TABLE_NAME + DbConstants.ON + 
+							DbStructure.SECTIONS.TABLE_NAME+DbConstants.DOT+DbStructure.SECTIONS.COLUMN_YEAR_ID + DbConstants.EQUALS
+								+ DbStructure.YEAR.TABLE_NAME+DbConstants.DOT+DbStructure.YEAR.COLUMN_ID +
+						DbConstants.WHERE + DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.EQUALS +"'" + user_id + "';"; 
 				}
 			ResultSet rs=stm.executeQuery(query);
 			System.out.println(query+" "+user_id);

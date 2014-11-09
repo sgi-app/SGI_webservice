@@ -21,16 +21,16 @@ public class Utility {
 				DBConnection.getPersonalInfo(user_id, is_faculty);
 				System.out.println("in status true");
 					System.out.print(Personal_info.f_name);
-					obj.put("f_name",Personal_info.f_name);
-					obj.put("l_name", Personal_info.l_name);
-					obj.put("profile_url",Personal_info.profile_url);
-					
+
+					obj.put(Constants.FIRST_NAME,Personal_info.f_name);
+					obj.put(Constants.LAST_NAME, Personal_info.l_name);
+					obj.put(Constants.PROFILE_IMAGE,Personal_info.profile_url);
 					if(is_faculty){
-						obj.put("branch_fac", Personal_info.branch);						
+						obj.put(Constants.DEPARTMENT, Personal_info.branch);						
 					}
 					else {
-						obj.put("section_stu",Personal_info.section);
-						obj.put("year", Personal_info.year);
+						obj.put(Constants.SECTION,Personal_info.section);
+						obj.put(Constants.YEAR, Personal_info.year);
 					}
 												
 				obj.put("token",msg);
