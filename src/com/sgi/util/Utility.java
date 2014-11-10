@@ -1,6 +1,5 @@
 package com.sgi.util;
 import java.security.MessageDigest;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 
 import org.codehaus.jettison.json.JSONArray;
@@ -15,27 +14,27 @@ public class Utility {
 	public static String ConstructJSON(String tagr,boolean statusr,String user_id,Boolean is_faculty,String msg){ 
 		JSONObject obj=new JSONObject();
 		try{
-			obj.put("tag",tagr);
-			obj.put("status",statusr);
+			obj.put(Constants.JSONKeys.TAG,tagr);
+			obj.put(Constants.JSONKeys.STATUS,statusr);
 			if(statusr){
 				DBConnection.getPersonalInfo(user_id, is_faculty);
 				System.out.println("in status true");
 					System.out.print(Personal_info.f_name);
-					obj.put(Constants.FIRST_NAME,Personal_info.f_name);
-					obj.put(Constants.LAST_NAME, Personal_info.l_name);
-					obj.put(Constants.PROFILE_IMAGE,Personal_info.profile_url);
+					obj.put(Constants.JSONKeys.FIRST_NAME,Personal_info.f_name);
+					obj.put(Constants.JSONKeys.LAST_NAME, Personal_info.l_name);
+					obj.put(Constants.JSONKeys.PROFILE_IMAGE,Personal_info.profile_url);
 					if(is_faculty){
-						obj.put(Constants.DEPARTMENT, Personal_info.branch);						
+						obj.put(Constants.JSONKeys.BRANCH, Personal_info.branch);						
 					}
 					else {
-						obj.put(Constants.SECTION,Personal_info.section);
-						obj.put(Constants.YEAR, Personal_info.year);
+						obj.put(Constants.JSONKeys.SECTION,Personal_info.section);
+						obj.put(Constants.JSONKeys.YEAR, Personal_info.year);
 					}
 												
-				obj.put("token",msg);
+				obj.put(Constants.JSONKeys.TOKEN,msg);
 			}
 			else
-				obj.put("error",msg);
+				obj.put(Constants.JSONKeys.ERROR,msg);
 		}
 		catch(Exception e){
 			return ConstructJSON(tagr,false,null,null,e.getMessage());
@@ -54,14 +53,14 @@ public class Utility {
 				StudentMin tmpusr=(StudentMin) str;
 				JSONObject tmpobj=new JSONObject();
 				
-				tmpobj.put(Constants.FIRST_NAME, tmpusr.f_name);
-				tmpobj.put(Constants.LAST_NAME,tmpusr.l_name);
-				tmpobj.put(Constants.L_ID, tmpusr.l_id);
-				tmpobj.put(Constants.PROFILE_IMAGE, tmpusr.picUrl);
-				tmpobj.put(Constants.DEPARTMENT,tmpusr.branch);
-				tmpobj.put(Constants.YEAR, tmpusr.year);
-				tmpobj.put(Constants.SECTION, tmpusr.section);
-				tmpobj.put(Constants.COURSE, tmpusr.course);
+				tmpobj.put(Constants.JSONKeys.FIRST_NAME, tmpusr.f_name);
+				tmpobj.put(Constants.JSONKeys.LAST_NAME,tmpusr.l_name);
+				tmpobj.put(Constants.JSONKeys.L_ID, tmpusr.l_id);
+				tmpobj.put(Constants.JSONKeys.PROFILE_IMAGE, tmpusr.picUrl);
+				tmpobj.put(Constants.JSONKeys.BRANCH,tmpusr.branch);
+				tmpobj.put(Constants.JSONKeys.YEAR, tmpusr.year);
+				tmpobj.put(Constants.JSONKeys.SECTION, tmpusr.section);
+				tmpobj.put(Constants.JSONKeys.COURSE, tmpusr.course);
 				
 				obja.put(tmpobj);
 			}
@@ -69,12 +68,12 @@ public class Utility {
 				FacultyMin tmpusr=(FacultyMin)str;
 				JSONObject tmpobj=new JSONObject();
 		
-				tmpobj.put(Constants.FIRST_NAME, tmpusr.f_name);
-				tmpobj.put(Constants.LAST_NAME,tmpusr.l_name);
-				tmpobj.put(Constants.PROFILE_IMAGE, tmpusr.picUrl);
-				tmpobj.put(Constants.DEPARTMENT,tmpusr.dep);
-				tmpobj.put(Constants.COURSE,tmpusr.course);
-				tmpobj.put(Constants.L_ID, tmpusr.l_id);
+				tmpobj.put(Constants.JSONKeys.FIRST_NAME, tmpusr.f_name);
+				tmpobj.put(Constants.JSONKeys.LAST_NAME,tmpusr.l_name);
+				tmpobj.put(Constants.JSONKeys.PROFILE_IMAGE, tmpusr.picUrl);
+				tmpobj.put(Constants.JSONKeys.BRANCH,tmpusr.dep);
+				tmpobj.put(Constants.JSONKeys.COURSE,tmpusr.course);
+				tmpobj.put(Constants.JSONKeys.L_ID, tmpusr.l_id);
 				obja.put(tmpobj);
 			}
 		}

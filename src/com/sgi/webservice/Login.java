@@ -23,7 +23,7 @@ public class Login {
 	@GET
 	@Path("/dologin")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String doLogin(@QueryParam(Constants.PARAMETER_USERNAME) String uname, @QueryParam(Constants.PARAMETER_PASSWORD) String pwd,@QueryParam("is_faculty") boolean is_faculty){
+	public String doLogin(@QueryParam(Constants.QueryParameters.USERNAME) String uname, @QueryParam(Constants.QueryParameters.PASSWORD) String pwd,@QueryParam(Constants.QueryParameters.IS_FACULTY) boolean is_faculty){
 		String response="";
 		System.out.println(" received Username="+uname+" password="+pwd);
 		String d_uname,d_pwd,token;
@@ -34,11 +34,11 @@ public class Login {
 		if(checkCredentials(d_uname,d_pwd,is_faculty)){
 			token=Utility.getToken(d_pwd+counter);
 			counter++;
-			response=Utility.ConstructJSON("login", true,d_uname,is_faculty,token);
+			response=Utility.ConstructJSON(Constants.JSONKeys.TAG_MSGS.LOGIN, true,d_uname,is_faculty,token);
 			System.out.println("in if");
 		}
 		else{
-			response=Utility.ConstructJSON("login", false, null,null,"Credentials not matched");
+			response=Utility.ConstructJSON(Constants.JSONKeys.TAG_MSGS.LOGIN, false, null,null,"Credentials not matched");
 			System.out.println("in else");
 		}
 		return response;
@@ -46,7 +46,7 @@ public class Login {
 	@GET
 	@Path("/getInitial")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getInitial(@QueryParam(Constants.PARAMETER_USERNAME) String userid,@QueryParam(Constants.PARAMETER_TOKEN) String token){
+	public String getInitial(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token){
 		if(DBConnection.authorizeUser(userid, token)){
 			InitialData idata=DBConnection.getInitialData();
 			//make json data

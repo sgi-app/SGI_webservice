@@ -2,7 +2,6 @@ package com.sgi.webservice;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -30,7 +29,7 @@ public class QueryTypeHandler {
 	@GET
 	@Path("/type_resolver")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String typeResolver(@QueryParam(Constants.PARAMETER_USERNAME) String userid,@QueryParam(Constants.PARAMETER_TOKEN) String token,@QueryParam(Constants.PARAMETER_USER_TYPE) boolean student,@QueryParam(Constants.PARAMETER_DEPARTMENT) String department,@QueryParam(Constants.PARAMETER_YEAR) int year,@QueryParam(Constants.PARAMETER_SECTION) String section,@QueryParam(Constants.PARAMETER_COURSE) String course){
+	public String typeResolver(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.USER_TYPE) boolean student,@QueryParam(Constants.QueryParameters.DEPARTMENT) String department,@QueryParam(Constants.QueryParameters.YEAR) int year,@QueryParam(Constants.QueryParameters.SECTION) String section,@QueryParam(Constants.QueryParameters.COURSE) String course){
 		if(DBConnection.authorizeUser(userid, token)){
 			if(student){
 				return send_student_list(year,department,course,section);
@@ -50,7 +49,7 @@ public class QueryTypeHandler {
 	@GET
 	@Path("/get_user_info")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getUserInfo(@QueryParam(Constants.PARAMETER_USERNAME) String userid,@QueryParam(Constants.PARAMETER_TOKEN) String token,@QueryParam(Constants.PARAMETER_LOGIN_ID) int l_id,@QueryParam(Constants.PARAMETER_USER_TYPE) boolean is_std){
+	public String getUserInfo(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.LOGIN_ID) int l_id,@QueryParam(Constants.QueryParameters.USER_TYPE) boolean is_std){
 		if(DBConnection.authorizeUser(userid, token)){
 			return userInfo(l_id,is_std);
 		}
@@ -80,12 +79,15 @@ public class QueryTypeHandler {
 					DbStructure.CONTACT_INFO.COLUMN_PIN + DbConstants.COMMA +
 					DbStructure.CONTACT_INFO.COLUMN_P_MOB + DbConstants.COMMA +
 					DbStructure.CONTACT_INFO.COLUMN_H_MOB + DbConstants.FROM +
-					DbStructure.LOGIN.TABLE_NAME + DbConstants.JOIN + DbStructure.CONTACT_INFO.TABLE_NAME + DbConstants.ON + 
+					DbStructure.LOGIN.TABLE_NAME + DbConstants.JOIN + DbStructure.CONTACT_INFO.TABLE_NAME+DbConstants.ON+ 
 					DbStructure.LOGIN.TABLE_NAME+DbConstants.DOT+DbStructure.LOGIN.COLUMN_ID + DbConstants.EQUALS + DbStructure.CONTACT_INFO.COLUMN_USER_ID + 
-					DbConstants.WHERE + DbStructure.LOGIN.COLUMN_ID + "='" + l_id + "';";
-			//query="select user_id ,street,city,state,pin,p_mob,h_mob from login join contact_info on login.id=usr_id where login.id="+l_id;
+					DbConstants.WHERE + DbStructure.LOGIN.TABLE_NAME+DbConstants.DOT+DbStructure.LOGIN.COLUMN_ID + "='" + l_id + "';";
+			//query="select user_id ,street,city,state,pin,p_mob,h_mob
+			//from login join contact_info on
+			//login.id=usr_id
+			//where login.id="+l_id;
 		}
-		
+		System.out.println(query);
 		Connection con=DBConnection.getConnection();
 		Statement stm;
 		JSONObject obj;
@@ -95,17 +97,17 @@ public class QueryTypeHandler {
 			obj=new JSONObject();
 			if(rs.next()){
 				if(is_std){
-					obj.put(Constants.USER_ID, rs.getString(1));
-					obj.put(Constants.ROLL_NO, rs.getString(2));
+					obj.put(Constants.JSONKeys.USER_ID, rs.getString(1));
+					obj.put(Constants.JSONKeys.ROLL_NO, rs.getString(2));
 				}
 				else{
-					obj.put(Constants.USER_ID, rs.getString(1));
-					obj.put(Constants.STATE, rs.getString(2));
-					obj.put(Constants.CITY, rs.getString(3));
-					obj.put(Constants.STATE, rs.getString(4));
-					obj.put(Constants.PIN, rs.getString(5));
-					obj.put(Constants.P_MOB, rs.getString(6));
-					obj.put(Constants.H_MOB, rs.getString(7));
+					obj.put(Constants.JSONKeys.USER_ID, rs.getString(1));
+					obj.put(Constants.JSONKeys.STATE, rs.getString(2));
+					obj.put(Constants.JSONKeys.CITY, rs.getString(3));
+					obj.put(Constants.JSONKeys.STATE, rs.getString(4));
+					obj.put(Constants.JSONKeys.PIN, rs.getString(5));
+					obj.put(Constants.JSONKeys.P_MOB, rs.getString(6));
+					obj.put(Constants.JSONKeys.H_MOB, rs.getString(7));
 				}
 			}
 			
@@ -113,7 +115,7 @@ public class QueryTypeHandler {
 			e.printStackTrace();
 			obj=new JSONObject();
 			try {
-				obj.put(Constants.Error, "fail to get or parse data");
+				obj.put(Constants.JSONKeys.ERROR, "fail to get or parse data");
 			} catch (JSONException e1) {
 				e1.printStackTrace();
 			}
