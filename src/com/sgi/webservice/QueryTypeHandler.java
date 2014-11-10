@@ -42,7 +42,7 @@ public class QueryTypeHandler {
 		}
 		else{
 			//wrong user
-			System.out.println("Somting went wrong");
+			System.out.println("Something went wrong");
 			return null;
 		}
 	}
@@ -66,7 +66,7 @@ public class QueryTypeHandler {
 					DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.COMMA +
 					DbStructure.STUDENTS.COLUMN_U_ROLL_NO + DbConstants.FROM +
 					DbStructure.STUDENTS.TABLE_NAME + DbConstants.JOIN + DbStructure.LOGIN.TABLE_NAME + DbConstants.ON + 
-					DbStructure.STUDENTS.COLUMN_LOGIN + DbConstants.EQUALS + DbStructure.LOGIN.COLUMN_ID + 
+					DbStructure.STUDENTS.COLUMN_LOGIN + DbConstants.EQUALS + DbStructure.LOGIN.TABLE_NAME + DbConstants.DOT + DbStructure.LOGIN.COLUMN_ID + 
 					DbConstants.WHERE + DbStructure.STUDENTS.COLUMN_LOGIN + "='" + l_id + "';";
 					
 		//	query="select user_id,u_roll_no from students join login on l_id=login.id where l_id="+l_id;
