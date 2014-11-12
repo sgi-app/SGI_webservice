@@ -6,6 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
+
+import com.sgi.constants.Constants;
 import com.sgi.util.InitialData;
 import com.sgi.util.Personal_info;
 import com.sgi.util.InitialData.Branches;
@@ -28,7 +32,62 @@ public class DBConnection {
 			return null;
 		}
 	}
+	public static boolean fillMessage(JSONObject msgs){
+		Connection conn=null;
+		try{
+			conn=getConnection();
+			String query="insert into messages(sender,text,time,receiver) values((select id from login where user_id='"+msgs.getString(Constants.JSONMessageKeys.SENDER)+"'),'"+msgs.getString(Constants.JSONMessageKeys.TEXT)+"','"+msgs.getLong(Constants.JSONMessageKeys.TIME)+"',(select id from login where user_id='"+msgs.getString(Constants.JSONMessageKeys.RECEIVER)+"'))";
+			System.out.println(query);
+			Statement stm=conn.createStatement();
+			stm.executeUpdate(query);
+			return true;
+		}catch(Exception e){
+			e.printStackTrace();
+			return false;
+		}
+		finally{
+			try{
+				conn.close();
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			
+		}
+		
+	}
 	
+	public static JSONArray fetchMessages(String userid){
+		Connection conn;
+		conn=getConnection();
+		JSONArray result=new JSONArray();
+		try{
+			String query="select login.user_id,text,time,is_group_msg,messages.id from messages join login on sender=login.id where receiver=(select id from login where user_id='"+userid+"') and state="+Constants.MsgState.TO_SEND;
+			System.out.println(query);
+			Statement stm=conn.createStatement();
+			ResultSet rs=stm.executeQuery(query);
+			JSONObject obj;
+			while(rs.next()){
+				obj=new JSONObject();
+				obj.put(Constants.JSONMessageKeys.SENDER, rs.getString(1));
+				obj.put(Constants.JSONMessageKeys.TEXT, rs.getString(2));
+				obj.put(Constants.JSONMessageKeys.TIME, rs.getLong(3));
+				obj.put(Constants.JSONMessageKeys.IS_GROUP_MESSAGE, rs.getString(4).equalsIgnoreCase("N")?0:1);
+				obj.put(Constants.JSONMessageKeys.ID, rs.getInt(5));
+				result.put(obj);
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		finally{
+			try{
+				conn.close();
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
+		System.out.println(result.toString());
+		return result;
+	}
 	public static boolean authorizeUser(String userid,String token){
 		Connection conn=null;
 		userid=new String(Base64.decode(userid)).trim();
@@ -52,6 +111,7 @@ public class DBConnection {
 			return false;
 		}
 		finally{
+			System.out.println("infinally");
 			try{
 				if(!conn.isClosed())
 					conn.close();
@@ -122,6 +182,30 @@ public class DBConnection {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+		}
+	}
+	public static void updateMessageState(JSONArray msgids){
+		Connection conn=null;
+		int len=msgids.length();
+		try{
+			
+			String query="update messages set state="+Constants.MsgState.SENT_SUCESSFULLY+" where id IN (";
+			for(int i=0;i<len;i++)
+				query+=msgids.getInt(i)+(i==len-1?"":",");
+			query+=")";
+			conn=getConnection();
+			Statement stm=conn.createStatement();
+			stm.executeUpdate(query);
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		finally{
+			try{
+				conn.close();
+			}catch(Exception e){
+				e.printStackTrace();
+			}
 		}
 	}
 	public static boolean checkLogin(String user,String pwd,boolean is_faculty){
