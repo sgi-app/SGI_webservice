@@ -11,6 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -53,12 +54,69 @@ public class QueryTypeHandler {
 		if(DBConnection.authorizeUser(userid, token)){
 			return userInfo(l_id,is_std);
 		}
-		return null;
+		return null;//return an JsonObject Telling user is invalid
 	}
-
 	
-	public String userInfo(int l_id,boolean is_std){
+	@GET
+	@Path("/upload_message")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String uploadMessage(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.MESSAGES) JSONObject msgs){
+		//insert into db buffered ready to send to target user
+		JSONObject obj=new JSONObject();
 		
+		try {
+			obj.put(Constants.JSONKeys.TAG,Constants.JSONKeys.TAG_MSGS.UPLOADING_MESSAGES );
+			if(DBConnection.authorizeUser(userid, token)){
+				System.out.println(msgs+" ");
+				//insert into db
+				if(DBConnection.fillMessage(msgs)){	
+					obj.put(Constants.JSONKeys.STATUS, true);
+				}
+				else{
+					obj.put(Constants.JSONKeys.STATUS, false);
+					obj.put(Constants.JSONKeys.ERROR, "Insertion error");
+				}
+				
+			}
+			else{
+				obj.put(Constants.JSONKeys.STATUS, false);
+				obj.put(Constants.JSONKeys.ERROR, "User Invalid");
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		
+		return obj.toString(); //return result sucess or failure
+	}
+	
+	@GET
+	@Path("/download_messages")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String downloadMessage(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token){
+		//insert into db buffered ready to send to target user
+		
+		return DBConnection.fetchMessages(userid).toString();
+	}
+	
+
+	@GET
+	@Path("/receive_ack")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String ackMessage(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.MSGIDS) JSONArray ids){
+		System.out.println(ids.toString());
+		if(ids.length()>0)
+			DBConnection.updateMessageState(ids);
+		JSONObject result=new JSONObject();
+		try {
+			result.put(Constants.JSONKeys.TAG, Constants.JSONKeys.TAG_MSGS.MSG_ACK);
+			result.put(Constants.JSONKeys.STATUS, true);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return result.toString();
+	}
+	
+	public String userInfo(int l_id,boolean is_std){	
 		String query;
 		if(is_std){
 			query = DbConstants.SELECT + 
