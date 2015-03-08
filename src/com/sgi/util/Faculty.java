@@ -1,30 +1,17 @@
 package com.sgi.util;
 
-public class Faculty {
+public class Faculty extends User {
+	String branch;
 
-	public static class FacultyMin{
-		String f_name;
-		String l_name;
-		String picUrl;
-		String dep;
-		String course;
-		int l_id; //identifier in login table
-		public FacultyMin(String f_n,String l_n,String pu,String dp,String cou,int li){
-			f_name=f_n;
-			l_name=l_n;
-			picUrl=pu;
-			dep=dp;
-			l_id=li;
-			course=cou;
-		}
+	public Faculty(String f_name_, String l_name_, String picUrl_,
+			String branch_, String user_id_) {
+		super(f_name_, l_name_, picUrl_, user_id_);
+		branch = branch_;
 	}
-	public static class FacultyFull{
-		
-		String id;
-		UserInfo uinfo;
-		public FacultyFull(String uid,UserInfo ui){
-			id=uid;
-			uinfo=ui;
-		}
+
+	@Override
+	public String toString() {
+		String COMMA = ",";
+		return "[" + branch + COMMA + super.toString() + "]";
 	}
 }
