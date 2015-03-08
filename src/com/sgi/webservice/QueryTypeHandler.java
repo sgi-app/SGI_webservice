@@ -1,10 +1,5 @@
 package com.sgi.webservice;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.ArrayList;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -17,338 +12,183 @@ import org.codehaus.jettison.json.JSONObject;
 
 import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
-import com.sgi.dao.DbConstants;
-import com.sgi.dao.DbStructure;
-import com.sgi.util.Faculty.FacultyMin;
-import com.sgi.util.Student.StudentMin;
+import com.sgi.util.Notification;
 import com.sgi.util.Utility;
 import com.sun.jersey.core.util.Base64;
 
-
 @Path("/query")
 public class QueryTypeHandler {
-	
+
 	@GET
 	@Path("/type_resolver")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String typeResolver(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.USER_TYPE) boolean student,@QueryParam(Constants.QueryParameters.DEPARTMENT) String department,@QueryParam(Constants.QueryParameters.YEAR) int year,@QueryParam(Constants.QueryParameters.SECTION) String section,@QueryParam(Constants.QueryParameters.COURSE) String course){
-		if(DBConnection.authorizeUser(userid, token)){
-			if(student){
-				return send_student_list(year,department,course,section);
-				
+	public String typeResolver(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token,
+			@QueryParam(Constants.QueryParameters.USER_TYPE) boolean student,
+			@QueryParam(Constants.QueryParameters.BRANCH) String branch,
+			@QueryParam(Constants.QueryParameters.YEAR) int year,
+			@QueryParam(Constants.QueryParameters.SECTION) String section,
+			@QueryParam(Constants.QueryParameters.COURSE) String course) {
+		DBConnection db = new DBConnection();
+		String str = null;
+		if (db.authorizeUser(userid, token)) {
+			if (student) {
+				System.out.println("students");
+				str = db.send_student_list(year, branch, course, section);
+			} else {
+				System.out.println("Faculty");
+				str = db.send_faculty_list(branch, course);
 			}
-			else{
-				return send_faculty_list(department,course);
-			}
+		} else {
+			// wrong user
+			System.out.println("Somting went wrong");
 		}
-		else{
-			//wrong user
-			System.out.println("Something went wrong");
-			return null;
-		}
+		db.closeConnection();
+		return str;
 	}
-	
+
 	@GET
 	@Path("/get_user_info")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getUserInfo(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.LOGIN_ID) int l_id,@QueryParam(Constants.QueryParameters.USER_TYPE) boolean is_std){
-		if(DBConnection.authorizeUser(userid, token)){
-			return userInfo(l_id,is_std);
+	public String getUserInfo(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token,
+			@QueryParam(Constants.QueryParameters.GET_DETAILS_OF_USER_ID) String get_details_of_user_id,
+			@QueryParam(Constants.QueryParameters.USER_TYPE) boolean is_std) {
+		DBConnection db = new DBConnection();
+		String str = null;
+		if (db.authorizeUser(userid, token)) {
+			str = db.getuserInfo(get_details_of_user_id, is_std);
 		}
-		return null;//return an JsonObject Telling user is invalid
+		db.closeConnection();
+		return str;// return an JsonObject Telling user is invalid
 	}
-	
+
 	@GET
-	@Path("/saveRegistrationId")
+	@Path("/set_new_notification")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String saveRegistrationId(@QueryParam(Constants.QueryParameters.USERNAME) String uname, 			
-			@QueryParam(Constants.QueryParameters.REG_ID) String reg_id){
-		String d_uname;
-		d_uname=new String(Base64.decode(uname)).trim();		
-		JSONObject obj=new JSONObject();
+	public String setNewNotification(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token,
+			@QueryParam(Constants.QueryParameters.Notification.SUBJECT) String subject,
+			@QueryParam(Constants.QueryParameters.Notification.BODY) String body,
+			@QueryParam(Constants.QueryParameters.Notification.TIME) long time,
+			@QueryParam(Constants.QueryParameters.COURSE) String course,
+			@QueryParam(Constants.QueryParameters.SECTION) String section,
+			@QueryParam(Constants.QueryParameters.YEAR) String year,
+			@QueryParam(Constants.QueryParameters.BRANCH) String branch) {
+		DBConnection db = new DBConnection();
+		JSONObject obj = new JSONObject();
 		try {
-			if(DBConnection.saveRegId(d_uname,reg_id)){			
+			obj.put(Constants.JSONKeys.TAG,
+					Constants.JSONKeys.TAG_MSGS.UPLOADING_NOTIFICATIONS);
+			if (db.authorizeUser(userid, token)) {
+				Notification noti = new Notification(subject, body, time,
+						new String(Base64.decode(userid)), course, branch,
+						section, year);
+				System.out.println("new notification from "
+						+ new String(Base64.decode(userid)));
+				db.fillNewNotification(noti);
 				obj.put(Constants.JSONKeys.STATUS, true);
-			}
-			else {
+			} else {
+				// return an JsonObject Telling user is invalid
 				obj.put(Constants.JSONKeys.STATUS, false);
-				
+				obj.put(Constants.JSONKeys.ERROR, "Invalid user");
 			}
-		}catch (JSONException e) {
-			e.printStackTrace();
+			db.closeConnection();
+		} catch (Exception e) {
+			Utility.debug(e);
 		}
-	return obj.toString();
+		return obj.toString();
 	}
 	
 	
 	@GET
 	@Path("/upload_message")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String uploadMessage(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.MESSAGES) JSONObject msgs){
-		//insert into db buffered ready to send to target user
-		JSONObject obj=new JSONObject();
-		
+	public String uploadMessage(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token,
+			@QueryParam(Constants.QueryParameters.MESSAGES) JSONObject msgs) {
+		// insert into db buffered ready to send to target user
+		DBConnection db = new DBConnection();
+
+		JSONObject obj = new JSONObject();
+
 		try {
-			obj.put(Constants.JSONKeys.TAG,Constants.JSONKeys.TAG_MSGS.UPLOADING_MESSAGES );
-			if(DBConnection.authorizeUser(userid, token)){
-				System.out.println(msgs+" ");
-				//insert into db
-				if(DBConnection.fillMessage(msgs)){	
+			obj.put(Constants.JSONKeys.TAG,
+					Constants.JSONKeys.TAG_MSGS.UPLOADING_MESSAGES);
+			if (db.authorizeUser(userid, token)) {
+				System.out.println(msgs + " ");
+				// insert into db
+				if (db.fillMessage(msgs)) {
 					obj.put(Constants.JSONKeys.STATUS, true);
-				}
-				else{
+				} else {
 					obj.put(Constants.JSONKeys.STATUS, false);
 					obj.put(Constants.JSONKeys.ERROR, "Insertion error");
 				}
-				
-			}
-			else{
+
+			} else {
 				obj.put(Constants.JSONKeys.STATUS, false);
 				obj.put(Constants.JSONKeys.ERROR, "User Invalid");
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			Utility.debug(e);
+		} finally {
+			db.closeConnection();
 		}
-		
-		return obj.toString(); //return result sucess or failure
+		return obj.toString(); // return result sucess or failure
 	}
-	
+
 	@GET
 	@Path("/download_messages")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String downloadMessage(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token){
-		//insert into db buffered ready to send to target user
-		
-		return DBConnection.fetchMessages(userid).toString();
+	public String downloadMessage(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token) {
+		// insert into db buffered ready to send to target user
+		DBConnection db = new DBConnection();
+		JSONArray jarr = db.fetchMessages(userid);
+		db.closeConnection();
+		return jarr.toString();
 	}
-	
 
 	@GET
 	@Path("/receive_ack")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String ackMessage(@QueryParam(Constants.QueryParameters.USERNAME) String userid,@QueryParam(Constants.QueryParameters.TOKEN) String token,@QueryParam(Constants.QueryParameters.MSGIDS) JSONArray ids){
+	public String ackMessage(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token,
+			@QueryParam(Constants.QueryParameters.MSGIDS) JSONArray ids) {
+		DBConnection db = new DBConnection();
 		System.out.println(ids.toString());
-		if(ids.length()>0)
-			DBConnection.updateMessageState(ids);
-		JSONObject result=new JSONObject();
+		if (ids.length() > 0)
+			db.updateMessageState(ids);
+		JSONObject result = new JSONObject();
 		try {
-			result.put(Constants.JSONKeys.TAG, Constants.JSONKeys.TAG_MSGS.MSG_ACK);
+			result.put(Constants.JSONKeys.TAG,
+					Constants.JSONKeys.TAG_MSGS.MSG_ACK);
 			result.put(Constants.JSONKeys.STATUS, true);
 		} catch (JSONException e) {
-			e.printStackTrace();
+			Utility.debug(e);
+		} finally {
+			db.closeConnection();
 		}
 		return result.toString();
 	}
-	
-	public String userInfo(int l_id,boolean is_std){	
-		String query;
-		if(is_std){
-			query = DbConstants.SELECT + 
-					DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.COMMA +
-					DbStructure.STUDENTS.COLUMN_U_ROLL_NO + DbConstants.FROM +
-					DbStructure.STUDENTS.TABLE_NAME + DbConstants.JOIN + DbStructure.LOGIN.TABLE_NAME + DbConstants.ON + 
-					DbStructure.STUDENTS.COLUMN_LOGIN + DbConstants.EQUALS + DbStructure.LOGIN.TABLE_NAME + DbConstants.DOT + DbStructure.LOGIN.COLUMN_ID + 
-					DbConstants.WHERE + DbStructure.STUDENTS.COLUMN_LOGIN + "='" + l_id + "';";
-					
-		//	query="select user_id,u_roll_no from students join login on l_id=login.id where l_id="+l_id;
-		}
-		else{
-			query = DbConstants.SELECT + 
-					DbStructure.LOGIN.COLUMN_USER_ID + DbConstants.COMMA +
-					DbStructure.CONTACT_INFO.COLUMN_STREET + DbConstants.COMMA +
-					DbStructure.CONTACT_INFO.COLUMN_CITY + DbConstants.COMMA +
-					DbStructure.CONTACT_INFO.COLUMN_STATE + DbConstants.COMMA +
-					DbStructure.CONTACT_INFO.COLUMN_PIN + DbConstants.COMMA +
-					DbStructure.CONTACT_INFO.COLUMN_P_MOB + DbConstants.COMMA +
-					DbStructure.CONTACT_INFO.COLUMN_H_MOB + DbConstants.FROM +
-					DbStructure.LOGIN.TABLE_NAME + DbConstants.JOIN + DbStructure.CONTACT_INFO.TABLE_NAME+DbConstants.ON+ 
-					DbStructure.LOGIN.TABLE_NAME+DbConstants.DOT+DbStructure.LOGIN.COLUMN_ID + DbConstants.EQUALS + DbStructure.CONTACT_INFO.COLUMN_USER_ID + 
-					DbConstants.WHERE + DbStructure.LOGIN.TABLE_NAME+DbConstants.DOT+DbStructure.LOGIN.COLUMN_ID + "='" + l_id + "';";
-			//query="select user_id ,street,city,state,pin,p_mob,h_mob
-			//from login join contact_info on
-			//login.id=usr_id
-			//where login.id="+l_id;
-		}
-		System.out.println(query);
-		Connection con=DBConnection.getConnection();
-		Statement stm;
-		JSONObject obj;
+
+
+	private String responceGenerator(boolean result, String msg) {
+		JSONObject obj = new JSONObject();
 		try {
-			stm = con.createStatement();
-			ResultSet rs=stm.executeQuery(query);
-			obj=new JSONObject();
-			if(rs.next()){
-				if(is_std){
-					obj.put(Constants.JSONKeys.USER_ID, rs.getString(1));
-					obj.put(Constants.JSONKeys.ROLL_NO, rs.getString(2));
-				}
-				else{
-					obj.put(Constants.JSONKeys.USER_ID, rs.getString(1));
-					obj.put(Constants.JSONKeys.STATE, rs.getString(2));
-					obj.put(Constants.JSONKeys.CITY, rs.getString(3));
-					obj.put(Constants.JSONKeys.STATE, rs.getString(4));
-					obj.put(Constants.JSONKeys.PIN, rs.getString(5));
-					obj.put(Constants.JSONKeys.P_MOB, rs.getString(6));
-					obj.put(Constants.JSONKeys.H_MOB, rs.getString(7));
-				}
-			}
-			
-		} catch (Exception e) {
+			obj.put(Constants.JSONKeys.STATUS, result);
+			obj.put(Constants.JSONKeys.ERROR, msg);
+		} catch (JSONException e) {
 			e.printStackTrace();
-			obj=new JSONObject();
-			try {
-				obj.put(Constants.JSONKeys.ERROR, "fail to get or parse data");
-			} catch (JSONException e1) {
-				e1.printStackTrace();
-			}
 		}
 		return obj.toString();
-		
-		
-	}
-	
-	public String send_faculty_list(String department,String course){
 
-		try{
-		Connection conn=DBConnection.getConnection();
-		String query;
-		if(course.equalsIgnoreCase("All"))
-/*
-			query="select f_name,l_name,user_id,branches.name,profile_url,is_online,p_mob from faculty "
-					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
-					+ "join branches on faculty.branch_id=branches.id order by f_name;";
-		else if(department.equalsIgnoreCase("All") ){
-			query="select f_name,l_name,user_id,branches.name,profile_url,is_online,p_mob from faculty "
-					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
-					+ "join branches on faculty.branch_id=branches.id order by f_name "
-					+ "join courses on branches.course_id=courses.id"
-					+ "where courses.name='"+course+"' order by f_name;";
-		}
-		else{			
-			query="select f_name,l_name,user_id,branches.name,profile_url,is_online,p_mob from faculty "
-					+ "join login on l_id=login.id join contact_info on usr_id=login.id "
-					+ "join branches on faculty.branch_id=branches.id order by f_name "
-					+ "join courses on branches.course_id=courses.id"
-					+ "where courses.name='"+course+"' and branches.name='"+department +"' order by f_name;";
-		}*/
-			query = DbConstants.SELECT +
-				DbStructure.FACULTY.COLUMN_F_NAME + DbConstants.COMMA +
-				DbStructure.FACULTY.COLUMN_L_NAME + DbConstants.COMMA +
-				DbStructure.FACULTY.COLUMN_PROFILE_URL + DbConstants.COMMA +
-				DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT + DbStructure.BRANCHES.COLUMN_NAME + DbConstants.COMMA +
-				DbStructure.COURSES.TABLE_NAME + DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + DbConstants.COMMA +
-				DbStructure.FACULTY.COLUMN_LOGIN_ID + DbConstants.FROM + 
-				DbStructure.FACULTY.TABLE_NAME + 
-				DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
-							DbStructure.FACULTY.COLUMN_BRANCH_ID + DbConstants.EQUALS +
-								DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT+DbStructure.BRANCHES.COLUMN_ID +  
-				DbConstants.JOIN + DbStructure.COURSES.TABLE_NAME + DbConstants.ON +
-							DbStructure.BRANCHES.COLUMN_COURSE_ID + DbConstants.EQUALS +
-								DbStructure.COURSES.TABLE_NAME + DbConstants.DOT+DbStructure.COURSES.COLUMN_ID + DbConstants.SEMICOLON;			
-		//	query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id=branches.id join courses on course_id=courses.id";
-		else
-			query = DbConstants.SELECT +
-			DbStructure.FACULTY.COLUMN_F_NAME + DbConstants.COMMA +
-			DbStructure.FACULTY.COLUMN_L_NAME + DbConstants.COMMA +
-			DbStructure.FACULTY.COLUMN_PROFILE_URL + DbConstants.COMMA +
-			DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT + DbStructure.BRANCHES.COLUMN_NAME + DbConstants.COMMA +
-			DbStructure.COURSES.TABLE_NAME + DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + DbConstants.COMMA +
-			DbStructure.FACULTY.COLUMN_LOGIN_ID + DbConstants.FROM + 
-			DbStructure.FACULTY.TABLE_NAME + 
-			DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
-						DbStructure.FACULTY.COLUMN_BRANCH_ID + DbConstants.EQUALS +
-							DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT+DbStructure.BRANCHES.COLUMN_ID +  
-			DbConstants.JOIN + DbStructure.COURSES.TABLE_NAME + DbConstants.ON +
-						DbStructure.BRANCHES.COLUMN_COURSE_ID + DbConstants.EQUALS +
-							DbStructure.COURSES.TABLE_NAME + DbConstants.DOT+DbStructure.COURSES.COLUMN_ID +
-			DbConstants.WHERE + DbStructure.COURSES.TABLE_NAME + DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + 
-				DbConstants.EQUALS + "'" + course + "'" +
-					(department.equalsIgnoreCase("All")?"":"and"+ DbStructure.BRANCHES.COLUMN_NAME+"='"+department+"';");
-	//query="select f_name,l_name,profile_url,branches.name,courses.name,l_id from faculty join branches on branch_id	=branches.id join courses on course_id=courses.id 
-		//		"where courses.name='"+course+"' "+(department.equalsIgnoreCase("All")?"":"and branches.name='"+department+"'");
-		Statement stm=conn.createStatement();
-		ResultSet rs=stm.executeQuery(query);
-		System.out.println(query);
-		ArrayList<FacultyMin> faculties=new ArrayList<FacultyMin>();
-		while(rs.next()){
-			faculties.add(new FacultyMin(rs.getString(1), rs.getString(2), rs.getString(3),rs.getString(4),rs.getString(5),rs.getInt(6)));
-		}
-		System.out.println("returning "+faculties.size()+" faculties");
-		return Utility.ConstructJSONArray(faculties, "faculty");
-		}catch(Exception e){
-			e.printStackTrace();
-			return null;
-		}
 	}
-	
-	public String send_student_list(int year,String department,String course,String section){
-		try{
-		Connection conn=DBConnection.getConnection();
-		String query;
-/*		if(year==0 && department.equalsIgnoreCase("All"))
-			query="select f_name,l_name,branch,profile_url,year,user_id,section,is_online from students join login on l_id=login.id;";
-		else if(year==0)
-			query="select f_name,l_name,branch,profile_url,year,user_id,section,is_online from students join login on l_id=login.id where branch='"+department+"';";
-		else if(department.equalsIgnoreCase("All"))
-			query="select f_name,l_name,branch,profile_url,year,user_id,section,is_online from students join login on l_id=login.id where year="+year+";";
-		else
-			query="select f_name,l_name,branch,profile_url,year,user_id,section,is_online from students join login on l_id=login.id where year="+year+" and branch='"+department+"';";
-*/		
-		query="select "+ DbStructure.STUDENTS.COLUMN_F_NAME+ DbConstants.COMMA + 
-				DbStructure.STUDENTS.COLUMN_L_NAME + DbConstants.COMMA +
-				DbStructure.STUDENTS.COLUMN_LOGIN + DbConstants.COMMA + 
-				DbStructure.STUDENTS.COLUMN_PROFILE + DbConstants.COMMA +
-				DbStructure.BRANCHES.TABLE_NAME+DbConstants.DOT + DbStructure.BRANCHES.COLUMN_NAME +DbConstants.COMMA +
-				DbStructure.YEAR.TABLE_NAME+DbConstants.DOT + DbStructure.YEAR.COLUMN_YEAR + DbConstants.COMMA +
-				DbStructure.SECTIONS.TABLE_NAME+DbConstants.DOT + DbStructure.SECTIONS.COLUMN_NAME + DbConstants.COMMA +
-				DbStructure.COURSES.TABLE_NAME+DbConstants.DOT + DbStructure.COURSES.COLUMN_NAME + 
-				DbConstants.FROM + DbStructure.STUDENTS.TABLE_NAME +
-				DbConstants.JOIN + DbStructure.SECTIONS.TABLE_NAME + DbConstants.ON +
-							DbStructure.STUDENTS.COLUMN_SECTION_ID + DbConstants.EQUALS +
-								DbStructure.SECTIONS.TABLE_NAME + DbConstants.DOT+DbStructure.SECTIONS.COLUMN_ID +
-				DbConstants.JOIN + DbStructure.YEAR.TABLE_NAME + DbConstants.ON +
-							DbStructure.SECTIONS.COLUMN_YEAR_ID + DbConstants.EQUALS +
-								DbStructure.YEAR.TABLE_NAME + DbConstants.DOT+DbStructure.YEAR.COLUMN_ID +
-				DbConstants.JOIN + DbStructure.BRANCHES.TABLE_NAME + DbConstants.ON +
-							DbStructure.YEAR.COLUMN_BRANCH_ID + DbConstants.EQUALS +
-								DbStructure.BRANCHES.TABLE_NAME + DbConstants.DOT+DbStructure.BRANCHES.COLUMN_ID +
-				DbConstants.JOIN + DbStructure.COURSES.TABLE_NAME + DbConstants.ON +
-							DbStructure.BRANCHES.COLUMN_COURSE_ID + DbConstants.EQUALS +
-								DbStructure.COURSES.TABLE_NAME + DbConstants.DOT+DbStructure.COURSES.COLUMN_ID +
-				((course.equalsIgnoreCase("All"))?" ":(("where "+DbStructure.COURSES.COLUMN_NAME+"='"+course+"'")+
-				((department.equalsIgnoreCase("All"))?" ":(" and "+DbStructure.BRANCHES.COLUMN_NAME+"='"+department+"'"))+
-				((year==0?" ":(" and "+DbStructure.YEAR.COLUMN_YEAR+"='"+year+"' ")))+
-				((department.equalsIgnoreCase("All") || year==0)?" ":(section.equalsIgnoreCase("All")?" ":(" and "+DbStructure.SECTIONS.COLUMN_NAME+"='"+section+"' ")))));
 
-		/*
-		query="select+ f_name,l_name,l_id,profile_url,branches.name,year.year,sections.name,courses.name from "
-		+"students join sections on section_id=sections.id "
-		+"join year on year_id=year.id "
-		+"join branches on branch_id=branches.id "
-		+"join courses on course_id=courses.id "
-		+((course.equalsIgnoreCase("All"))?" ":(("where courses.name='"+course+"'")
-		+((department.equalsIgnoreCase("All"))?" ":(" and branches.name='"+department+"'"))
-		+((year==0?" ":(" and year.year="+year+" ")))
-		+((department.equalsIgnoreCase("All") || year==0)?" ":(section.equalsIgnoreCase("All")?" ":(" and sections.name='"+section+"' ")))));
-		*/
-		System.out.println(query);
-		Statement stm=conn.createStatement();
-		ResultSet rs=stm.executeQuery(query);
-		ArrayList<StudentMin> students=new ArrayList<StudentMin>();
-		StudentMin tmp;
-		while(rs.next()){
-			try{
-			tmp=new StudentMin(rs.getString(1), rs.getString(2), rs.getInt(3),rs.getString(4),rs.getString(5),rs.getInt(6),rs.getString(7),rs.getString(8));
-			students.add(tmp);
-			}catch(NullPointerException ex){
-				System.out.println("row discarded null value attribute");
-			}
-		}
-		System.out.println("returning "+students.size()+" students");
-		return Utility.ConstructJSONArray(students, "student");
-		}catch(Exception e){
-			e.printStackTrace();
-			return null;
-		}
-	}
 }
