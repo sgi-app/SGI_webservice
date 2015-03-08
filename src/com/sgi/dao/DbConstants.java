@@ -7,6 +7,11 @@ public class DbConstants {
 	public static final String ON = " ON ";
 	public static final String FROM = " FROM ";
 	public static final String WHERE = " WHERE ";
+	public static final String INSERT = "INSERT ";
+	public static final String INTO = "INTO ";
+	public static final String VALUES = " VALUES";
+	public static final String UPDATE = "UPDATE ";
+	public static final String SET = " SET ";
 	
 	public static final String EQUALS = " = ";
 	public static final String DOT = ".";

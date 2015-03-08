@@ -35,6 +35,7 @@ public class DbStructure {
 		String COLUMN_USER_ID="user_id";
 		String COLUMN_PASSWORD="pswd";
 		String COLUMN_TOKEN="token";
+		String COLUMN_REG_ID="reg_id";
 		String COLUMN_IS_FACULTY="is_faculty";
 		String COLUMN_IS_ONLINE="is_online";
 	}

@@ -22,6 +22,7 @@ import com.sgi.dao.DbStructure;
 import com.sgi.util.Faculty.FacultyMin;
 import com.sgi.util.Student.StudentMin;
 import com.sgi.util.Utility;
+import com.sun.jersey.core.util.Base64;
 
 
 @Path("/query")
@@ -56,6 +57,29 @@ public class QueryTypeHandler {
 		}
 		return null;//return an JsonObject Telling user is invalid
 	}
+	
+	@GET
+	@Path("/saveRegistrationId")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String saveRegistrationId(@QueryParam(Constants.QueryParameters.USERNAME) String uname, 			
+			@QueryParam(Constants.QueryParameters.REG_ID) String reg_id){
+		String d_uname;
+		d_uname=new String(Base64.decode(uname)).trim();		
+		JSONObject obj=new JSONObject();
+		try {
+			if(DBConnection.saveRegId(d_uname,reg_id)){			
+				obj.put(Constants.JSONKeys.STATUS, true);
+			}
+			else {
+				obj.put(Constants.JSONKeys.STATUS, false);
+				
+			}
+		}catch (JSONException e) {
+			e.printStackTrace();
+		}
+	return obj.toString();
+	}
+	
 	
 	@GET
 	@Path("/upload_message")

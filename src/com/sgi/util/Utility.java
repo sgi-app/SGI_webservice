@@ -2,6 +2,8 @@ package com.sgi.util;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 
+import javax.swing.text.AbstractDocument.Content;
+
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -100,4 +102,14 @@ public class Utility {
 		String token=sha1(input);
 		return token;
 	}
+	/*
+	 * SEND GCM NOTIFICATION TO RECEIVER OF MESSAGES
+	 */
+	public static void sendGcmNotification(String receiver){
+		String apiKey="AIzaSyBl4soKfsLN_HB0rjvxeXZGPodkYnPbTP8";
+		
+		
+	}
+	
+	
 }

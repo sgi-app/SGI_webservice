@@ -20,6 +20,8 @@ public interface Constants {
 		public static String IS_FACULTY="is_faculty";
 		public static String MSGIDS="message_ids";
 		public static String MESSAGES="messages";
+		public static String REG_ID="reg_id";
+		
 	}
 	
 	public static interface MsgState{

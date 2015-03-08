@@ -32,14 +32,23 @@ public class DBConnection {
 			return null;
 		}
 	}
+	/*
+	 * STORE MESSAGES INTO THE SERVER DATABASE
+	 */
 	public static boolean fillMessage(JSONObject msgs){
 		Connection conn=null;
 		try{
 			conn=getConnection();
-			String query="insert into messages(sender,text,time,receiver) values((select id from login where user_id='"+msgs.getString(Constants.JSONMessageKeys.SENDER)+"'),'"+msgs.getString(Constants.JSONMessageKeys.TEXT)+"','"+msgs.getLong(Constants.JSONMessageKeys.TIME)+"',(select id from login where user_id='"+msgs.getString(Constants.JSONMessageKeys.RECEIVER)+"'))";
+			String query="insert into messages(sender,text,time,receiver) values((select id from login where user_id="
+					+ "'"+msgs.getString(Constants.JSONMessageKeys.SENDER)+"'),"
+							+ "'"+msgs.getString(Constants.JSONMessageKeys.TEXT)+"',"
+									+ "'"+msgs.getLong(Constants.JSONMessageKeys.TIME)+"',"
+											+ "(select id from login where user_id="
+											+ "'"+msgs.getString(Constants.JSONMessageKeys.RECEIVER)+"'))";
 			System.out.println(query);
 			Statement stm=conn.createStatement();
 			stm.executeUpdate(query);
+			// Utility.sendgcmnotification(msgs.getString(Constants.JSONMessageKeys.RECEIVER));
 			return true;
 		}catch(Exception e){
 			e.printStackTrace();
@@ -55,7 +64,9 @@ public class DBConnection {
 		}
 		
 	}
-	
+	/*
+	 * FETCH NEW MESSAGES FROM THE SERVER
+	 */
 	public static JSONArray fetchMessages(String userid){
 		Connection conn;
 		conn=getConnection();
@@ -121,6 +132,9 @@ public class DBConnection {
 			}
 		}
 	}
+	/*
+	 * RETURNS THE INITIAL INFO OF USER AFTER LOGIN TO FILL THE LOCAL DATABASE
+	 */
 	public static InitialData getInitialData(){
 		Connection conn=null;
 		try{
@@ -184,6 +198,9 @@ public class DBConnection {
 				}
 		}
 	}
+	/*
+	 * UPDATES THE MESSAGE STATE 
+	 */
 	public static void updateMessageState(JSONArray msgids){
 		Connection conn=null;
 		int len=msgids.length();
@@ -208,6 +225,9 @@ public class DBConnection {
 			}
 		}
 	}
+	/*
+	 * CHECKS THE LOGIN CREDENTIALS FROM THE SERVER DATABASE
+	 */
 	public static boolean checkLogin(String user,String pwd,boolean is_faculty){
 		Connection conn=null;
 		try {
@@ -250,7 +270,9 @@ public class DBConnection {
 			}
 		}
 	}
-	
+	/*
+	 * RETURNS THE PERSONAL INFO OF USER AFTER LOGIN TO FILL THE LOCAL DATABASE
+	 */
 	public static void getPersonalInfo(String user_id,Boolean is_faculty){
 		String query;
 		Connection con=null;
@@ -317,6 +339,35 @@ public class DBConnection {
 						ex.printStackTrace();
 					}
 				}
+	}
+	/*
+	* SAVES THE REGISTRATION ID OF USER FOR GCM
+	*/
+	public static boolean saveRegId(String user_id,String reg_id){
+		System.out.print(user_id);
+		Connection conn=null;
+		try{
+			conn=getConnection();
+			String query= DbConstants.UPDATE + DbStructure.LOGIN.TABLE_NAME+
+					DbConstants.SET + DbStructure.LOGIN.COLUMN_REG_ID + DbConstants.EQUALS + "'"+reg_id+"'"+								
+					DbConstants.WHERE+DbStructure.LOGIN.COLUMN_USER_ID+DbConstants.EQUALS+"'"+user_id+"'"+DbConstants.SEMICOLON;
+			System.out.println(query);
+			Statement stm=conn.createStatement();
+			stm.executeUpdate(query);
+			return true;
+		}catch(Exception e){
+			e.printStackTrace();
+			return false;
+		}
+		finally{
+			try{
+				conn.close();
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			
+		}
+		
 	}
 	
 }
