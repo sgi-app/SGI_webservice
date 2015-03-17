@@ -3,6 +3,7 @@ package com.sgi.dao;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -41,7 +42,7 @@ public class DBConnection {
 			if (conn == null || conn.isClosed()) {
 				Class.forName(DbStructure.DB_CLASS);
 				conn = DriverManager.getConnection(DbStructure.DB_URL);
-				System.out.println("new connection");
+				// System.out.println("new connection");
 			}
 
 		} catch (Exception e) {
@@ -55,29 +56,22 @@ public class DBConnection {
 		try {
 			if (conn != null) {
 				conn.close();
-				System.out.println("connection closed");
+				// System.out.println("connection closed");
 			}
 		} catch (Exception e) {
-			System.out.println("Eroor closing connections");
+			Utility.debug(e);
 		}
 	}
 
-	public void fillNewNotification(Notification noti) {
+	public void fillNotification(Notification noti) {
 
 		try {
-			MapperEntry mapper_e = new MapperEntry();
-			mapper_e.COURSE = noti.course;
-			mapper_e.BRANCH = noti.branch;
-			mapper_e.YEAR = noti.year;
-			mapper_e.SECTION = noti.section;
-			if (createMapperEntry(mapper_e)) {
-				String query = "select LAST_INSERT_ID()";
-				Statement stm = conn.createStatement();
-				ResultSet rs = stm.executeQuery(query);
-				int target_id = -1;
-				if (rs.next())
-					target_id = rs.getInt(1);
-				query = "insert into notification(faculty_id,text,time,title,target) values((select id from login where user_id='"
+			MapperEntry mapper_e = new MapperEntry(noti.course, noti.branch,
+					noti.year, noti.section);
+			int target_id = -1;
+			if ((target_id = createMapperEntry(mapper_e)) != -1) {
+
+				String query = "insert into notification(faculty_id,text,time,title,target) values((select id from login where user_id='"
 						+ noti.sid.trim()
 						+ "') ,'"
 						+ noti.text
@@ -85,7 +79,8 @@ public class DBConnection {
 						+ new Date(noti.time).toString()
 						+ "', '"
 						+ noti.subject + "', '" + target_id + "')";
-				System.out.println(query);
+				// System.out.println(query);
+				Statement stm = conn.createStatement();
 				stm.executeUpdate(query);
 			}
 		} catch (Exception e) {
@@ -93,38 +88,149 @@ public class DBConnection {
 		}
 	}
 
-	private boolean createMapperEntry(MapperEntry mapper_e) {
-		// check for valid entries and enter in database
-		String query = "insert into user_mapper(course,branch,year,section) values('"
-				+ mapper_e.COURSE
-				+ "','"
-				+ mapper_e.BRANCH
-				+ "','"
-				+ mapper_e.YEAR + "','" + mapper_e.SECTION + "')";
-
+	private int getPKOfUser(String userid) {
+		int pk_of_user = -1;
 		try {
-			Statement stm = conn.createStatement();
-			stm.executeUpdate(query);
-			return true;
+			String get_id_query = "select id from login where user_id='"
+					+ userid + "'";
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(get_id_query);
+
+			if (rs.next()) {
+				pk_of_user = rs.getInt(rs.findColumn("id"));
+			} else {
+				System.out.println("No such user");
+				return pk_of_user;
+			}
+			rs.close();
 		} catch (SQLException e) {
 			Utility.debug(e);
-			return false;
+			pk_of_user = -1;
 		}
+		return pk_of_user;
+	}
 
+	/**
+	 * fill notifications from JSONArray to the database checked and working
+	 * 
+	 * @param notifications
+	 *            {@link JSONArray} of notifications
+	 * @param userid
+	 *            {@link String} user_id like 'b-11-136'
+	 * @return {@link JSONArray} of notification IDs received from client or
+	 *         null if exception occurs
+	 */
+	public JSONArray fillNotifications(JSONArray notifications, String userid) {
+		JSONArray noti_ids = new JSONArray();
+		try {
+			int len = notifications.length();
+			if (len > 0) {
+				// get the pk of user with userid
+				// here user is sender
+				int sender_pk = getPKOfUser(userid);
+
+				StringBuilder query = new StringBuilder(
+						"insert into notification(faculty_id,text,time,title,target) values");
+				String str = "(?,?,?,?,?)";
+
+				for (int i = 0; i < len; i++) {
+					query.append(str);
+					if (i < len - 1)
+						query.append(DbConstants.COMMA);
+				}
+				PreparedStatement stm = conn.prepareStatement(query.toString());
+				int j = 1;
+				JSONObject notification;
+				MapperEntry mapper_e;
+				int target_id;
+				for (int i = 0; i < len; i++) {
+					notification = notifications.getJSONObject(i);
+					mapper_e = new MapperEntry(
+							notification
+									.getString(Constants.JSONKEYS.NOTIFICATIONS.COURSE),
+							notification
+									.getString(Constants.JSONKEYS.NOTIFICATIONS.BRANCH),
+							notification
+									.getString(Constants.JSONKEYS.NOTIFICATIONS.YEAR),
+							notification
+									.getString(Constants.JSONKEYS.NOTIFICATIONS.SECTION));
+					target_id = createMapperEntry(mapper_e);
+					if (target_id != -1) {
+						stm.setInt(j, sender_pk);
+						stm.setString(
+								j + 1,
+								notification
+										.getString(Constants.JSONKEYS.NOTIFICATIONS.TEXT));
+						stm.setLong(j + 2, notification
+								.getLong(Constants.JSONKEYS.NOTIFICATIONS.TIME));
+						stm.setString(
+								j + 3,
+								notification
+										.getString(Constants.JSONKEYS.NOTIFICATIONS.SUBJECT));
+						stm.setInt(j + 4, target_id);
+						noti_ids.put(notification
+								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
+
+					} else {
+						// if here there will be a problem as statement will be
+						// containing more ? then the actual values
+						// as we skipped some
+						// we should reject the whole operations
+					}
+					j += 5;
+				}
+				stm.execute();
+				// insert notifications with pending state set by default in db
+			}
+		} catch (Exception e) {
+			Utility.debug(e);
+		}
+		// System.out.println("noti acks" + noti_ids);
+		return noti_ids;
+	}
+
+	private int createMapperEntry(MapperEntry mapper_e) {
+		// check for valid entries and enter in database
+		int inserted_id = -1;
+		String query = "insert into user_mapper(course,branch,year,section) values(?,?,?,?)";
+		try {
+			PreparedStatement stm = conn.prepareStatement(query,
+					Statement.RETURN_GENERATED_KEYS);
+			stm.setString(1, mapper_e.COURSE);
+			stm.setString(2, mapper_e.BRANCH);
+			stm.setString(3, mapper_e.YEAR);
+			stm.setString(4, mapper_e.SECTION);
+			if (stm.executeUpdate() > 0) {
+				// if inserted successfully get the generated ids
+				ResultSet rs = stm.getGeneratedKeys();
+				if (rs.next()) {
+					inserted_id = rs.getInt(1);
+				}
+				rs.close();
+			} else {
+
+				inserted_id = -1;
+			}
+
+		} catch (SQLException e) {
+			Utility.debug(e);
+
+			inserted_id = -1;
+		}
+		return inserted_id;
 	}
 
 	public boolean fillMessage(JSONObject msgs) {
 		try {
 			String query = "insert into messages(sender,text,time,receiver) values((select id from login where user_id='"
-					+ msgs.getString(Constants.JSONMessageKeys.SENDER)
+					+ msgs.getString(Constants.JSONKEYS.MESSAGES.SENDER)
 					+ "'),'"
-					+ msgs.getString(Constants.JSONMessageKeys.TEXT)
+					+ msgs.getString(Constants.JSONKEYS.MESSAGES.TEXT)
 					+ "','"
-					+ msgs.getLong(Constants.JSONMessageKeys.TIME)
+					+ msgs.getLong(Constants.JSONKEYS.MESSAGES.TIME)
 					+ "',(select id from login where user_id='"
-					+ msgs.getString(Constants.JSONMessageKeys.RECEIVER)
+					+ msgs.getString(Constants.JSONKEYS.MESSAGES.RECEIVER)
 					+ "'))";
-			System.out.println(query);
 			Statement stm = conn.createStatement();
 			stm.executeUpdate(query);
 			return true;
@@ -135,35 +241,181 @@ public class DBConnection {
 
 	}
 
-	public JSONArray fetchMessages(String userid) {
-
-		JSONArray result = new JSONArray();
+	/**
+	 * fill {@link JSONArray} containing messages to database checked and its
+	 * working
+	 * 
+	 * @param messages
+	 *            {@link JSONArray} of messages received from client
+	 * @param userid
+	 *            {@link String} user_id like 'b-11-136'
+	 * @return {@link JSONArray} of message IDs received from client or null if
+	 *         exception occurs
+	 */
+	public JSONArray fillMessages(JSONArray messages, String userid) {
+		JSONArray msg_ids = new JSONArray();
 		try {
-			String query = "select login.user_id,text,time,is_group_msg,messages.id from messages join login on sender=login.id where receiver=(select id from login where user_id='"
-					+ userid + "') and state=" + Constants.MsgState.TO_SEND;
-			System.out.println(query);
+			int len = messages.length();
+			if (len > 0) {
+				int sender_pk = getPKOfUser(userid);
+				StringBuilder query = new StringBuilder(
+						"insert into messages(sender,text,time,receiver) values");
+				String new_entry = "(?,?,?,?)";
+				for (int i = 0; i < len; i++) {
+					query.append(new_entry);
+					if (i < len - 1)
+						query.append(DbConstants.COMMA);
+				}
+
+				PreparedStatement stm = conn.prepareStatement(query.toString());
+				JSONObject message;
+				int j = 1;
+				for (int i = 0; i < len; i++) {
+					message = messages.getJSONObject(i);
+					stm.setInt(j, sender_pk); // sender
+					stm.setString(j + 1,
+							message.getString(Constants.JSONKEYS.MESSAGES.TEXT));
+					stm.setLong(j + 2,
+							message.getLong(Constants.JSONKEYS.MESSAGES.TIME));
+					stm.setInt(j + 3, getPKOfUser(message
+							.getString(Constants.JSONKEYS.MESSAGES.RECEIVER)));
+					j += 4;
+					msg_ids.put(message.getInt(Constants.JSONKEYS.MESSAGES.ID));
+				}
+				stm.execute();
+				// inserted messages with pending state default value set in db
+				// :P
+			}
+
+		} catch (Exception e) {
+			Utility.debug(e);
+		}
+		// System.out.println("message acks" + msg_ids);
+		return msg_ids;
+	}
+
+	/**
+	 * get notifications for a user if any
+	 * 
+	 * @param userid
+	 * @return
+	 */
+	public JSONArray getNotificationsFromDb(String userid, boolean is_faculty) {
+		JSONArray notifications = new JSONArray();
+
+		try {
+			// find out user category and fetch notification accordingly
+			String query;
+			ResultSet rs;
+			Statement stm = conn.createStatement();
+			String course, branch, section;
+			int year = 0;
+			course = branch = section = null;
+			if (!is_faculty) {
+				query = "select c.name,b.name,y.year,se.name from login as l join students as s on l.id=s.l_id join sections as se on s.section_id=se.id join year as y on se.year_id=y.id join branches as b on y.branch_id=b.id join courses as c on b.course_id=c.id  where l.user_id='"
+						+ userid.toUpperCase() + "' ";
+				rs = stm.executeQuery(query);
+				if (rs.next()) {
+					course = rs.getString(1);
+					branch = rs.getString(2);
+					year = rs.getInt(3);
+					section = rs.getString(4);
+				}
+				rs.close();
+			} else {
+				query = "select c.name,b.name from login as l join faculty as f on l.id=f.l_id join branches as b on f.branch_id=b.id join courses as c on b.course_id=c.id  where l.user_id='"
+						+ userid.toUpperCase() + "' ";
+				rs = stm.executeQuery(query);
+				if (rs.next()) {
+					course = rs.getString(1);
+					branch = rs.getString(2);
+				}
+				rs.close();
+			}
+
+			query = "select l.user_id,title,text,time,n.id,um.course,um.section,um.year,um.branch from notification as n join user_mapper as um on n.target=um.id join login as l on n.faculty_id=l.id where um.course IN ('All','"
+					+ course
+					+ "') and um.branch IN ('All','"
+					+ branch
+					+ "')"
+					+ (is_faculty ? "" : (" and um.section IN ('All','"
+							+ section + "') and um.year IN ('0','"
+							+ String.valueOf(year) + "')"));
+
+			rs = stm.executeQuery(query);
+			JSONObject notification;
+			while (rs.next()) {
+
+				notification = new JSONObject();
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.SENDER,
+						rs.getString(1));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.SUBJECT,
+						rs.getString(2));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.TEXT,
+						rs.getString(3));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.TIME,
+						rs.getString(4));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.ID,
+						rs.getString(5));
+				// for actual target identification
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.COURSE,
+						rs.getString(6));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.SECTION,
+						rs.getString(7));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.YEAR,
+						rs.getString(8));
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.BRANCH,
+						rs.getString(9));
+				notifications.put(notification);
+			}
+			rs.close();
+		} catch (Exception e) {
+			Utility.debug(e);
+		}
+
+		return notifications;
+	}
+
+	/**
+	 * get messages for a user if any not checked
+	 * 
+	 * @param userid
+	 * @return
+	 * 
+	 */
+	public JSONArray getMessagesFromDb(String userid) {
+
+		JSONArray messages = new JSONArray();
+		try {
+			int receiver_pk_id = getPKOfUser(userid);
+
+			String query = "select login.user_id,text,time,is_group_msg,messages.id from messages join login on sender=login.id where receiver="
+					+ receiver_pk_id + " and state=" + Constants.STATE.PENDING;
+
 			Statement stm = conn.createStatement();
 			ResultSet rs = stm.executeQuery(query);
-			JSONObject obj;
+			JSONObject message;
 			while (rs.next()) {
-				obj = new JSONObject();
-				obj.put(Constants.JSONMessageKeys.SENDER, rs.getString(1));
-				obj.put(Constants.JSONMessageKeys.TEXT, rs.getString(2));
-				obj.put(Constants.JSONMessageKeys.TIME, rs.getLong(3));
-				obj.put(Constants.JSONMessageKeys.IS_GROUP_MESSAGE, rs
-						.getString(4).equalsIgnoreCase("N") ? 0 : 1);
-				obj.put(Constants.JSONMessageKeys.ID, rs.getInt(5));
-				result.put(obj);
+				message = new JSONObject();
+				message.put(Constants.JSONKEYS.MESSAGES.SENDER, rs.getString(1));
+				message.put(Constants.JSONKEYS.MESSAGES.TEXT, rs.getString(2));
+				message.put(Constants.JSONKEYS.MESSAGES.TIME, rs.getLong(3));
+				message.put(
+						Constants.JSONKEYS.MESSAGES.IS_GROUP_MESSAGE,
+						rs.getString(4).equalsIgnoreCase("N") ? Constants.IS_GROUP_MSG.NO
+								: Constants.IS_GROUP_MSG.YES);
+				message.put(Constants.JSONKEYS.MESSAGES.ID, rs.getInt(5));
+				messages.put(message);
 			}
 		} catch (Exception e) {
 			Utility.debug(e);
 		}
-		System.out.println(result.toString());
-		return result;
+		return messages;
 	}
 
 	public boolean authorizeUser(String userid, String token) {
-		System.out.print("authorizing user " + userid + " with token " + token);
+		// System.out.print("authorizing user " + userid + " with token " +
+		// token);
 		userid = Utility.decode(userid);
 		token = Utility.decode(token);
 		try {
@@ -173,16 +425,16 @@ public class DBConnection {
 					+ DbStructure.LOGIN.COLUMN_USER_ID + "='" + userid
 					+ "' and " + DbStructure.LOGIN.COLUMN_TOKEN + "='" + token
 					+ "';";
-			System.out.println(query);
+			// System.out.println(query);
 			Statement stm = conn.createStatement();
 			ResultSet rs = stm.executeQuery(query);
 			if (rs.next()) {
 				if (rs.getInt(1) == 1) {
-					System.out.println(" successful");
+					// System.out.println(" successful");
 					return true;
 				}
 			}
-			System.out.println(" failed");
+			// System.out.println(" failed");
 			return false;
 
 		} catch (Exception e) {
@@ -242,7 +494,7 @@ public class DBConnection {
 				idata.years.add(year);
 			}
 
-			System.out.println("initial data set");
+			// System.out.println("initial data set");
 			return idata;
 
 		} catch (Exception e) {
@@ -254,19 +506,54 @@ public class DBConnection {
 	public void updateMessageState(JSONArray msgids) {
 
 		int len = msgids.length();
-		try {
+		if (len > 0) {
+			try {
 
-			String query = "update messages set state="
-					+ Constants.MsgState.SENT_SUCESSFULLY + " where id IN (";
-			for (int i = 0; i < len; i++)
-				query += msgids.getInt(i) + (i == len - 1 ? "" : ",");
-			query += ")";
+				StringBuilder query = new StringBuilder(
+						"update messages set state=");
+				query.append(Constants.STATE.ACK_RECEIVED);
+				query.append(" where id IN (");
+				for (int i = 0; i < len; i++) {
+					query.append(msgids.getInt(i));
+					query.append(DbConstants.COMMA);
+				}
+				query.deleteCharAt(query.length() - 1);
+				query.append(DbConstants.BRACES_CLOSE);
 
-			Statement stm = conn.createStatement();
-			stm.executeUpdate(query);
+				Statement stm = conn.createStatement();
 
-		} catch (Exception e) {
-			Utility.debug(e);
+				stm.executeUpdate(query.toString());
+
+			} catch (Exception e) {
+				Utility.debug(e);
+			}
+		}
+	}
+
+	public void updateNotificationState(JSONArray msgids) {
+
+		int len = msgids.length();
+		if (len > 0) {
+			try {
+
+				StringBuilder query = new StringBuilder(
+						"update notification set state=");
+				query.append(Constants.STATE.SENT);
+				query.append(" where id IN (");
+				for (int i = 0; i < len; i++) {
+					query.append(msgids.getInt(i));
+					query.append(DbConstants.COMMA);
+				}
+				query.deleteCharAt(query.length() - 1);
+				query.append(DbConstants.BRACES_CLOSE);
+
+				Statement stm = conn.createStatement();
+
+				stm.executeUpdate(query.toString());
+
+			} catch (Exception e) {
+				Utility.debug(e);
+			}
 		}
 	}
 
@@ -280,25 +567,26 @@ public class DBConnection {
 					+ user.toUpperCase() + "' and "
 					+ DbStructure.LOGIN.COLUMN_IS_FACULTY + "='"
 					+ (is_faculty ? 'Y' : 'N') + "';";
-			System.out.println(query);
-			System.out.println("matching\n" + pwd);
+			// System.out.println(query);
+			// System.out.println("matching\n" + pwd);
 			ResultSet rs = stm.executeQuery(query);
 			if (rs.next()) {
-				System.out.println(Utility.sha1(rs.getString(1)));
+				// System.out.println(Utility.sha1(rs.getString(1)));
 				if (Utility.sha1(rs.getString(1)).equals(pwd)) {
 					query = "Update " + DbStructure.LOGIN.TABLE_NAME
 							+ " set token='"
 							+ Utility.sha1(pwd + Login.counter) + "' where "
 							+ DbStructure.LOGIN.COLUMN_USER_ID + "='" + user
 							+ "';";
-					System.out.println(query);
+					// System.out.println(query);
 					if (stm.executeUpdate(query) == 1)
 						return true;
-					else
-						System.out.println("problem inserting token");
+					else {
+						// System.out.println("problem inserting token");
+					}
 				}
 			} else {
-				System.out.println("no data matched user input");
+				// System.out.println("no data matched user input");
 			}
 			return false;
 		} catch (SQLException e) {
@@ -418,12 +706,12 @@ public class DBConnection {
 						+ DbConstants.EQUALS + "'" + user_id + "';";
 			}
 			ResultSet rs = stm.executeQuery(query);
-			System.out.println(query);
+			// System.out.println(query);
 			String f_name, l_name, picUrl, section, branch, street, city, state, pin, p_mob, h_mob, u_roll;
 			int year;
 
 			while (rs.next()) {
-				System.out.println(rs.getString(1));
+				// System.out.println(rs.getString(1));
 				f_name = rs.getString(1);
 				l_name = rs.getString(2);
 				picUrl = rs.getString(3);
@@ -586,14 +874,14 @@ public class DBConnection {
 			// "where courses.name='"+course+"' "+(department.equalsIgnoreCase("All")?"":"and branches.name='"+department+"'");
 			Statement stm = conn.createStatement();
 			ResultSet rs = stm.executeQuery(query);
-			System.out.println(query);
+			// System.out.println(query);
 			ArrayList<Faculty> faculties = new ArrayList<Faculty>();
 			while (rs.next()) {
 				faculties.add(new Faculty(rs.getString(1), rs.getString(2), rs
 						.getString(3), rs.getString(4), rs.getString(5)));
 			}
-			System.out.println("returning " + faculties.size() + " faculties\n"
-					+ faculties.toString());
+			// System.out.println("returning " + faculties.size() +
+			// " faculties\n" + faculties.toString());
 			return Utility.ConstructJSONArray(faculties, "faculty");
 		} catch (Exception e) {
 			Utility.debug(e);
@@ -728,7 +1016,7 @@ public class DBConnection {
 			 * year==0)?" ":(section.equalsIgnoreCase
 			 * ("All")?" ":(" and sections.name='"+section+"' ")))));
 			 */
-			System.out.println(query);
+			// System.out.println(query);
 			Statement stm = conn.createStatement();
 			ResultSet rs = stm.executeQuery(query);
 			ArrayList<Student> students = new ArrayList<Student>();
@@ -740,12 +1028,14 @@ public class DBConnection {
 							rs.getString(6));
 					students.add(tmp);
 				} catch (NullPointerException ex) {
-					System.out.println("row discarded null value attribute");
+
+					Utility.debug(ex);
+					// System.out.println("row discarded null value attribute");
 				}
 			}
 
-			System.out.println("returning " + students.size() + " students \n "
-					+ students.toString());
+			// System.out.println("returning " + students.size() +
+			// " students \n "+ students.toString());
 
 			return Utility.ConstructJSONArray(students, "student");
 		} catch (Exception e) {
@@ -788,7 +1078,7 @@ public class DBConnection {
 			// login.id=usr_id
 			// where login.user_id="+u_id;
 		}
-		System.out.println(query);
+		// System.out.println(query);
 		Statement stm;
 		JSONObject obj;
 		try {
@@ -797,14 +1087,14 @@ public class DBConnection {
 			obj = new JSONObject();
 			if (rs.next()) {
 				if (is_std) {
-					obj.put(Constants.JSONKeys.ROLL_NO, rs.getString(1));
+					obj.put(Constants.JSONKEYS.ROLL_NO, rs.getString(1));
 				} else {
-					obj.put(Constants.JSONKeys.STATE, rs.getString(1));
-					obj.put(Constants.JSONKeys.CITY, rs.getString(2));
-					obj.put(Constants.JSONKeys.STATE, rs.getString(3));
-					obj.put(Constants.JSONKeys.PIN, rs.getString(4));
-					obj.put(Constants.JSONKeys.P_MOB, rs.getString(5));
-					obj.put(Constants.JSONKeys.H_MOB, rs.getString(6));
+					obj.put(Constants.JSONKEYS.STATE, rs.getString(1));
+					obj.put(Constants.JSONKEYS.CITY, rs.getString(2));
+					obj.put(Constants.JSONKEYS.STATE, rs.getString(3));
+					obj.put(Constants.JSONKEYS.PIN, rs.getString(4));
+					obj.put(Constants.JSONKEYS.P_MOB, rs.getString(5));
+					obj.put(Constants.JSONKEYS.H_MOB, rs.getString(6));
 				}
 			}
 
@@ -812,7 +1102,7 @@ public class DBConnection {
 			Utility.debug(e);
 			obj = new JSONObject();
 			try {
-				obj.put(Constants.JSONKeys.ERROR, "fail to get or parse data");
+				obj.put(Constants.JSONKEYS.ERROR, "fail to get or parse data");
 			} catch (JSONException e1) {
 				Utility.debug(e1);
 			}

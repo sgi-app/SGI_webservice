@@ -27,28 +27,27 @@ public class Login {
 			@QueryParam(Constants.QueryParameters.USERNAME) String uname,
 			@QueryParam(Constants.QueryParameters.PASSWORD) String pwd,
 			@QueryParam(Constants.QueryParameters.IS_FACULTY) boolean is_faculty) {
-		System.out.println("dologin called");
+		
 		DBConnection db = new DBConnection();
 		String response = "";
-		System.out.println(" received Username=" + uname + " password=" + pwd);
+		
 		String d_uname, d_pwd, token;
 		d_uname = Utility.decode(uname);
 		d_pwd = Utility.decode(pwd);
-		System.out
-				.println("decoded Username=" + d_uname + " password=" + d_pwd);
+		
 
 		if (checkCredentials(db, d_uname, d_pwd, is_faculty)) {
 			token = Utility.getToken(d_pwd + counter);
 			counter++;
 			response = Utility.ConstructJSON(db,
-					Constants.JSONKeys.TAG_MSGS.LOGIN, true, d_uname,
+					Constants.JSONKEYS.TAG_MSGS.LOGIN, true, d_uname,
 					is_faculty, token);
-			System.out.println("in if");
+			System.out.println(d_uname+"logged in");
 		} else {
 			response = Utility.ConstructJSON(db,
-					Constants.JSONKeys.TAG_MSGS.LOGIN, false,
+					Constants.JSONKEYS.TAG_MSGS.LOGIN, false,
 					"Credentials not matched");
-			System.out.println("in else");
+			System.out.println(d_uname+" tried to login but wrong details");
 		}
 		db.closeConnection();
 		return response;
