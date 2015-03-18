@@ -1,34 +1,31 @@
 package com.sgi.dao;
 
-public class DbConstants {
+public interface DbConstants {
 
-	public static final String SELECT = "SELECT ";
-	public static final String JOIN = " JOIN ";
-	public static final String ON = " ON ";
-	public static final String FROM = " FROM ";
-	public static final String WHERE = " WHERE ";
-	public static final String INSERT = "INSERT ";
-	public static final String INTO = "INTO ";
-	public static final String VALUES = " VALUES";
-	public static final String UPDATE = "UPDATE ";
-	public static final String SET = " SET ";
-	
-	public static final String EQUALS = " = ";
-	public static final String DOT = ".";
-	public static final String COMMA = " ,";
-	public static final String BRACES_OPEN = " (";
-	public static final String BRACES_CLOSE = ") ";
-	public static final String SEMICOLON = ";";
-	public static final String QUESTION_MARK = " ?";
-	
-	public static final String TYPE_TEXT = " TEXT";
-	public static final String TYPE_INT = " INTEGER";
-	public static final String TYPE_REAL = " REAL";
-	
-	public static final String CONSTRAIN_PRIMARY_KEY = " PRIMARY KEY";
-	public static final String UNIQUE = " UNIQUE";
-	
-	public static final String ALTER_TABLE = "alter table ";
-	public static final String CREATE_TABLE = "create table ";
-	public static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
+	String SELECT = "SELECT ";
+	String JOIN = " JOIN ";
+	String ON = " ON ";
+	String FROM = " FROM ";
+	String WHERE = " WHERE ";
+
+	String EQUALS = " = ";
+	String DOT = ".";
+	String COMMA = " ,";
+	String SINGLE_QUOTE = "'";
+	String QUOTES = "\"";
+	String PARENTESIS_OPEN = " (";
+	String PARENTESIS_CLOSE = ") ";
+	String SEMICOLON = ";";
+	String QUESTION_MARK = " ?";
+
+	String TYPE_TEXT = " TEXT";
+	String TYPE_INT = " INTEGER";
+	String TYPE_REAL = " REAL";
+
+	String CONSTRAIN_PRIMARY_KEY = " PRIMARY KEY";
+	String UNIQUE = " UNIQUE";
+
+	String ALTER_TABLE = "alter table ";
+	String CREATE_TABLE = "create table ";
+	String DROP_TABLE = "DROP TABLE IF EXISTS ";
 }
