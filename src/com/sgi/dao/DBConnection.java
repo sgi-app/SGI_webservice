@@ -518,7 +518,7 @@ public class DBConnection {
 					query.append(DbConstants.COMMA);
 				}
 				query.deleteCharAt(query.length() - 1);
-				query.append(DbConstants.BRACES_CLOSE);
+				query.append(DbConstants.PARENTESIS_CLOSE);
 
 				Statement stm = conn.createStatement();
 
@@ -545,7 +545,7 @@ public class DBConnection {
 					query.append(DbConstants.COMMA);
 				}
 				query.deleteCharAt(query.length() - 1);
-				query.append(DbConstants.BRACES_CLOSE);
+				query.append(DbConstants.PARENTESIS_CLOSE);
 
 				Statement stm = conn.createStatement();
 
@@ -1108,5 +1108,133 @@ public class DBConnection {
 			}
 		}
 		return obj.toString();
+	}
+
+	/**
+	 * return full details of users whos login id is provided in the parameter
+	 * 
+	 * @param ids
+	 *            {@link JSONArray} of Login ids of users whose details are
+	 *            required
+	 * @return {@link JSONObject} containing two or one depending on input
+	 *         parameters data {@link JSONArray} one for {@link FacultyFull}
+	 *         other for {@link StudentFull}
+	 */
+	public JSONObject getUsersDetail(JSONArray ids) {
+		int len = ids.length();
+		JSONObject result = new JSONObject();
+
+		try {
+			if (len > 0) {
+				ArrayList<String> student_ids = new ArrayList<String>();
+				ArrayList<String> faculty_ids = new ArrayList<String>();
+				StringBuilder strb = new StringBuilder();
+				ResultSet rs;
+				Statement stm;
+				String str;
+				JSONArray tmp_user_arr;
+				JSONObject tmp_user;
+				// separate student and faculty IDs
+				for (int i = 0; i < len; i++) {
+					str = ids.getString(i);
+					if (str.startsWith("e") || str.startsWith("E")) {
+						faculty_ids.add(str);
+					} else {
+						student_ids.add(str);
+					}
+				}
+
+				// get student details
+				if (student_ids.size() > 0) {
+					strb.append("select l.user_id, f_name, l_name, profile_url,u_roll_no,c.name,b.name,se.name,y.year from login as l join students as s on l.id=s.l_id join sections as se on s.section_id=se.id join year as y on se.year_id=y.id join branches as b on y.branch_id=b.id join courses as c on b.course_id=c.id where l.user_id IN (");
+					for (String st : student_ids) {
+						strb.append(DbConstants.SINGLE_QUOTE);
+						strb.append(st);
+						strb.append(DbConstants.SINGLE_QUOTE);
+						strb.append(DbConstants.COMMA);
+					}
+					strb.deleteCharAt(strb.length() - 1);
+					strb.append(DbConstants.PARENTESIS_CLOSE);
+					// execute it
+					stm = conn.createStatement();
+					rs = stm.executeQuery(strb.toString());
+					tmp_user_arr = new JSONArray();
+
+					while (rs.next()) {
+						// get the data
+						tmp_user = new JSONObject();
+						tmp_user.put(Constants.JSONKEYS.L_ID, rs.getString(1));
+						tmp_user.put(Constants.JSONKEYS.FIRST_NAME,
+								rs.getString(2));
+						tmp_user.put(Constants.JSONKEYS.LAST_NAME,
+								rs.getString(3));
+						tmp_user.put(Constants.JSONKEYS.PROFILE_IMAGE,
+								rs.getString(4));
+						tmp_user.put(Constants.JSONKEYS.ROLL_NO,
+								rs.getString(5));
+
+						tmp_user.put(Constants.JSONKEYS.COURSE, rs.getString(6));
+						tmp_user.put(Constants.JSONKEYS.BRANCH, rs.getString(7));
+						tmp_user.put(Constants.JSONKEYS.YEAR, rs.getString(8));
+						tmp_user.put(Constants.JSONKEYS.SECTION,
+								rs.getString(9));
+
+						tmp_user_arr.put(tmp_user);
+					}
+					rs.close();
+					if (tmp_user_arr.length() > 0)
+						result.put(Constants.JSONKEYS.STUDENT, tmp_user_arr);
+				}
+				// get faculty details
+				strb.setLength(0);
+				if (faculty_ids.size() > 0) {
+					strb.append("select l.user_id, f_name, l_name, profile_url, c.name, b.name, d.street, d.city, d.state, d.pin, d.p_mob, d.h_mob from login as l join faculty as f on l.id=f.l_id join contact_info as d on l.id=d.usr_id join branches as b on f.branch_id=b.id join courses as c on b.course_id=c.id where l.user_id IN (");
+					for (String st : faculty_ids) {
+						strb.append(DbConstants.SINGLE_QUOTE);
+						strb.append(st);
+						strb.append(DbConstants.SINGLE_QUOTE);
+						strb.append(DbConstants.COMMA);
+					}
+					strb.deleteCharAt(strb.length() - 1);
+					strb.append(DbConstants.PARENTESIS_CLOSE);
+					// execute it
+					stm = conn.createStatement();
+					rs = stm.executeQuery(strb.toString());
+					tmp_user_arr = new JSONArray();
+					while (rs.next()) {
+						// get the data
+						tmp_user = new JSONObject();
+
+						tmp_user.put(Constants.JSONKEYS.L_ID, rs.getString(1));
+						tmp_user.put(Constants.JSONKEYS.FIRST_NAME,
+								rs.getString(2));
+						tmp_user.put(Constants.JSONKEYS.LAST_NAME,
+								rs.getString(3));
+						tmp_user.put(Constants.JSONKEYS.PROFILE_IMAGE,
+								rs.getString(4));
+
+						tmp_user.put(Constants.JSONKEYS.COURSE, rs.getString(5));
+						tmp_user.put(Constants.JSONKEYS.BRANCH, rs.getString(6));
+
+						tmp_user.put(Constants.JSONKEYS.STREET, rs.getString(7));
+						tmp_user.put(Constants.JSONKEYS.CITY, rs.getString(8));
+						tmp_user.put(Constants.JSONKEYS.STATE, rs.getString(9));
+						tmp_user.put(Constants.JSONKEYS.PIN, rs.getString(10));
+						tmp_user.put(Constants.JSONKEYS.P_MOB, rs.getString(11));
+						tmp_user.put(Constants.JSONKEYS.H_MOB, rs.getString(12));
+
+						tmp_user_arr.put(tmp_user);
+					}
+					rs.close();
+					if (tmp_user_arr.length() > 0)
+						result.put(Constants.JSONKEYS.FACULTY, tmp_user_arr);
+				}
+			}
+		} catch (JSONException e) {
+			Utility.debug(e);
+		} catch (SQLException e) {
+			Utility.debug(e);
+		}
+		return result;
 	}
 }

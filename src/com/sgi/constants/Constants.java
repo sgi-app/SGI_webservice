@@ -6,7 +6,7 @@ public interface Constants {
 
 	// public static String DB_LOGIN_TABLE="login";
 
-	public static interface QueryParameters {
+	public interface QueryParameters {
 		String PASSWORD = "password";
 		String USERNAME = "username";
 		// String QUERY_ID = "query_id";
@@ -23,7 +23,7 @@ public interface Constants {
 		String MSGIDS = "message_ids";
 		String MESSAGES = "messages";
 
-		public static interface Notification {
+		public interface Notification {
 			String SUBJECT = "subject";
 			String BODY = "body";
 			String TIME = "time";
@@ -37,7 +37,7 @@ public interface Constants {
 	 * @author Zeeshan Khan
 	 * 
 	 */
-	public static interface STATE {
+	public interface STATE {
 		/**
 		 * this means the message or notification has been send to the target
 		 * user or group but no acknowledgment is received
@@ -58,12 +58,16 @@ public interface Constants {
 		int ACK_SENT = 4;
 	}
 
-	public static interface IS_GROUP_MSG {
+	public interface IS_GROUP_MSG {
 		int YES = 0;
 		int NO = 1;
 	}
 
-	public static interface JSONKEYS {
+	public interface JSONKEYS {
+
+		String STUDENT = "Student";
+		String FACULTY = "Faculty";
+
 		String FIRST_NAME = "FirstName";
 		String LAST_NAME = "LastName";
 		String PROFILE_IMAGE = "ProfileImage";
@@ -86,7 +90,7 @@ public interface Constants {
 		String STATUS = "Status";
 		String TAG = "Tag";
 
-		public static interface TAG_MSGS {
+		public interface TAG_MSGS {
 			String LOGIN = "Login";
 			String UPLOADING_MESSAGES = "UploadingMessages";
 			String MSG_ACK = "MessageAcknoledgement";
@@ -95,7 +99,7 @@ public interface Constants {
 			String UPLOADING_NOTIFICATIONS = "UploadingNotifications";
 		}
 
-		public static interface MESSAGES {
+		public interface MESSAGES {
 			String ID = "Id";
 			String MESSAGES = "Messages";
 			String RECEIVER = "Receiver";
@@ -106,7 +110,7 @@ public interface Constants {
 			String ACK = "Msg_ack";
 		}
 
-		public static interface NOTIFICATIONS {
+		public interface NOTIFICATIONS {
 			String NOTIFICATIONS = "Notifications";
 			String ID = "Id";
 			String TEXT = "Text";

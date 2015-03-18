@@ -1,6 +1,7 @@
 package com.sgi.webservice;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -69,6 +70,37 @@ public class QueryTypeHandler {
 			str = db.getuserInfo(get_details_of_user_id, is_std);
 		}
 		db.closeConnection();
+		System.out.println("sending details\n" + str + "\n\n");
+		return str;// return an JsonObject Telling user is invalid
+	}
+
+	@POST
+	@Path("/get_full_user_info")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getUserInfo(InputStream inputStream) {
+		BufferedReader br = new BufferedReader(new InputStreamReader(
+				inputStream));
+		DBConnection db = new DBConnection();
+		String str = null;
+		try {
+			String userid = br.readLine();
+			String token = br.readLine();
+			if (db.authorizeUser(userid, token)) {
+				StringBuilder strb = new StringBuilder();
+				while ((str = br.readLine()) != null) {
+					strb.append(str);
+				}
+				JSONArray ids = new JSONArray(strb.toString());
+				str = db.getUsersDetail(ids).toString();
+			}
+		} catch (IOException e) {
+			Utility.debug(e);
+		} catch (JSONException e) {
+			Utility.debug(e);
+		} finally {
+			db.closeConnection();
+		}
 		System.out.println("sending details\n" + str + "\n\n");
 		return str;// return an JsonObject Telling user is invalid
 	}
