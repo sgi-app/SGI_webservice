@@ -76,5 +76,6 @@ public interface Constants {
 		public static String SENDER = "Sender";
 		public static String IS_GROUP_MESSAGE = "is_group_msg";
 		public static String TIME = "Time";
+		public static String ANY_NEW_MESSAGE= "any_new_message";
 	}
 }

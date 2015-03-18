@@ -102,8 +102,7 @@ public class QueryTypeHandler {
 		}
 		return obj.toString();
 	}
-	
-	
+
 	@GET
 	@Path("/upload_message")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -149,7 +148,7 @@ public class QueryTypeHandler {
 			@QueryParam(Constants.QueryParameters.TOKEN) String token) {
 		// insert into db buffered ready to send to target user
 		DBConnection db = new DBConnection();
-		JSONArray jarr = db.fetchMessages(userid);
+		JSONArray jarr = db.fetchMessages(Utility.decode(userid));
 		db.closeConnection();
 		return jarr.toString();
 	}
@@ -178,6 +177,28 @@ public class QueryTypeHandler {
 		return result.toString();
 	}
 
+	@GET
+	@Path("/new_message")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String new_message(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token) {
+		DBConnection db = new DBConnection();
+		Boolean msg = db.is_new_message(userid);
+		JSONArray jarr = new JSONArray();
+		JSONObject obj = new JSONObject();
+		try {
+			obj.put(Constants.JSONMessageKeys.ANY_NEW_MESSAGE, msg);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		jarr.put(obj);
+		db.closeConnection();
+		System.out.println(jarr.toString());
+		return jarr.toString();
+
+	}
 
 	private String responceGenerator(boolean result, String msg) {
 		JSONObject obj = new JSONObject();

@@ -166,6 +166,23 @@ public class DBConnection {
 		return result;
 	}
 
+	public Boolean is_new_message(String userid) {
+		try{	
+			String query = "SELECT sender,text from messages"
+					+ " where state = 0 "
+					+ "and receiver= (select id from login where user_id = '"+userid+"')";
+			System.out.println(query);
+			Statement stm = conn.createStatement();
+			ResultSet rs=stm.executeQuery(query);
+			System.out.println(rs.next());
+			return rs.next();
+		}
+		catch(Exception e) {
+			Utility.debug(e);
+			return false;
+			}
+	}
+	
 	public boolean authorizeUser(String userid, String token) {
 		System.out.print("authorizing user " + userid + " with token " + token);
 		userid = Utility.decode(userid);
