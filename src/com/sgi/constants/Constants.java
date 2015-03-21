@@ -31,7 +31,10 @@ public interface Constants {
 
 
 	}
-
+	public interface FOR_FACULTY {
+		int YES = 0;
+		int NO = 1;
+	}
 	/**
 	 * states of messages or notifications on sever send pending or to send
 	 * 
@@ -112,6 +115,7 @@ public interface Constants {
 		}
 
 		public interface NOTIFICATIONS {
+			String FOR_FACULTY = "For_Faculty";
 			String NOTIFICATIONS = "Notifications";
 			String ID = "Id";
 			String TEXT = "Text";

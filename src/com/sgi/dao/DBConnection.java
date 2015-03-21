@@ -51,7 +51,6 @@ public class DBConnection {
 		}
 	}
 
-
 	public void closeConnection() {
 
 		try {
@@ -67,7 +66,7 @@ public class DBConnection {
 	public void fillNotification(Notification noti) {
 
 		try {
-			MapperEntry mapper_e = new MapperEntry(noti.course, noti.branch,
+			MapperEntry mapper_e = new MapperEntry(0, noti.course, noti.branch,
 					noti.year, noti.section);
 			int target_id = -1;
 			if ((target_id = createMapperEntry(mapper_e)) != -1) {
@@ -131,22 +130,25 @@ public class DBConnection {
 				int sender_pk = getPKOfUser(userid);
 
 				StringBuilder query = new StringBuilder(
-						"insert into notification(faculty_id,text,time,title,target) values");
-				String str = "(?,?,?,?,?)";
+						"insert into notification(faculty_id,text,time,title,target,for_faculty) values");
+				String str = "(?,?,?,?,?,?)";
 
 				for (int i = 0; i < len; i++) {
 					query.append(str);
-					if (i < len - 1)
-						query.append(DbConstants.COMMA);
+					query.append(DbConstants.COMMA);
 				}
+				query.deleteCharAt(query.length() - 1);
+
 				PreparedStatement stm = conn.prepareStatement(query.toString());
 				int j = 1;
 				JSONObject notification;
-				MapperEntry mapper_e;
+				MapperEntry mapper_e = null;
 				int target_id;
 				for (int i = 0; i < len; i++) {
 					notification = notifications.getJSONObject(i);
 					mapper_e = new MapperEntry(
+							notification
+									.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY),
 							notification
 									.getString(Constants.JSONKEYS.NOTIFICATIONS.COURSE),
 							notification
@@ -169,6 +171,13 @@ public class DBConnection {
 								notification
 										.getString(Constants.JSONKEYS.NOTIFICATIONS.SUBJECT));
 						stm.setInt(j + 4, target_id);
+						stm.setInt(
+								j + 5,
+								notification
+										.getString(
+												Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY)
+										.equalsIgnoreCase("Y") ? Constants.FOR_FACULTY.YES
+										: Constants.FOR_FACULTY.NO);
 						noti_ids.put(notification
 								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
 
@@ -178,9 +187,14 @@ public class DBConnection {
 						// as we skipped some
 						// we should reject the whole operations
 					}
-					j += 5;
+					j += 6;
 				}
-				stm.execute();
+				if (stm.executeUpdate() > 0) {
+					ResultSet rs = stm.getGeneratedKeys();
+					while (rs.next()) {
+						fill_user_notification_map(mapper_e, rs.getInt(1));
+					}
+				}
 				// insert notifications with pending state set by default in db
 			}
 		} catch (Exception e) {
@@ -188,6 +202,129 @@ public class DBConnection {
 		}
 		// System.out.println("noti acks" + noti_ids);
 		return noti_ids;
+	}
+
+	/**
+	 * Fill the user_notification_map table with the target users of the
+	 * notification
+	 * 
+	 * @param mapper_e
+	 * @param notification_id
+	 */
+
+	private void fill_user_notification_map(MapperEntry mapper_e,
+			int notification_id) {
+
+		ResultSet rs;
+		Statement stm;
+		PreparedStatement prep_stm;
+		String query_temp = null;
+		int rs_size = -1, j = 1;
+
+		StringBuilder query_stud = new StringBuilder(
+				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
+		StringBuilder query_fac = new StringBuilder(
+				"insert into user_notification_map(notification_id,user_id,is_faculty) values");		
+		String new_values = " (?,?,?)";
+		try {
+			/**
+			 * Case 1 : course = ALL
+			 */
+			if (!(mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO)) {
+				if (mapper_e.COURSE.equalsIgnoreCase("all")) {
+					query_temp = " select id,is_faculty from login where is_faculty='N'";
+
+				} else {
+					/**
+					 * Case 2 : Particular course selected
+					 */
+					// strb.append("sdawdy")
+					query_temp = " select login.id,is_faculty from login"
+							+ " join students on login.id=students.l_id"
+							+ " join sections on students.section_id=sections.id"
+							+ " join year on sections.year_id=year.id"
+							+ " join branches on year.branch_id=branches.id"
+							+ " join courses on branches.course_id=courses.id"
+							+ " where courses.name='" + mapper_e.COURSE + "'";
+					if (!mapper_e.BRANCH.equalsIgnoreCase("all")) {
+						query_temp += " and branches.name = '"
+								+ mapper_e.BRANCH + "'";
+					}
+					if (!mapper_e.YEAR.equalsIgnoreCase("0")) {
+						query_temp += " and year.year= '" + mapper_e.YEAR + "'";
+					}
+					if (!mapper_e.SECTION.equalsIgnoreCase("all")) {
+						query_temp += " and sections.name='" + mapper_e.SECTION
+								+ "'";
+					}
+					System.out.println("" + query_temp);
+				}
+			
+			stm = conn.createStatement();
+			rs = stm.executeQuery(query_temp); // rs contains all the users
+			rs.last();
+			rs_size = rs.getRow();
+			System.out.println("fetch sizze is" + rs.getRow());
+			rs.beforeFirst();
+			
+			for (int i = 0; i < rs_size; i++) {
+				query_stud.append(new_values);
+				query_stud.append(DbConstants.COMMA);
+			}
+			query_stud.deleteCharAt(query_stud.length() - 1);
+			prep_stm = conn.prepareStatement(query_stud.toString());
+			while (rs.next()) { // insert all users in rs into u_n_map table
+				prep_stm.setInt(j, notification_id);
+				prep_stm.setInt(j + 1, rs.getInt(1));
+				prep_stm.setString(j + 2, rs.getString(2));
+				j += 3;
+			}
+			prep_stm.executeUpdate();
+			rs.close();
+			}
+			// students added in list..
+			// now select target faculty
+			j = 1 ;
+			if (mapper_e.COURSE.equalsIgnoreCase("all")) {
+				query_temp = " select id,is_faculty from login where is_faculty='Y'";
+			} else {
+				query_temp = " select l.id,is_faculty from login as l"
+						+ " join faculty as f on l.id=f.l_id"
+						+ " join branches as b on f.branch_id=b.id"
+						+ " join courses as c on b.course_id=c.id"
+						+ " where c.name='" + mapper_e.COURSE + "'";
+				if (!mapper_e.BRANCH.equalsIgnoreCase("all")) {
+					query_temp += " and b.name ='" + mapper_e.BRANCH + "'";
+				}
+				System.out.println(query_temp);
+			}
+			stm = conn.createStatement();
+			rs = stm.executeQuery(query_temp); // rs contains all the users
+			rs.last();
+			rs_size = rs.getRow();
+			System.out.println("fetch sizze is" + rs.getRow());
+			rs.beforeFirst();
+
+			for (int i = 0; i < rs_size; i++) {
+				query_fac.append(new_values);
+				query_fac.append(DbConstants.COMMA);
+			}
+			query_fac.deleteCharAt(query_fac.length() - 1);
+
+			prep_stm = conn.prepareStatement(query_fac.toString());
+
+			while (rs.next()) { // insert all users in rs into u_n_map table
+				prep_stm.setInt(j, notification_id);
+				prep_stm.setInt(j + 1, rs.getInt(1));
+				prep_stm.setString(j + 2, rs.getString(2));
+				j += 3;
+			}
+			prep_stm.executeUpdate();
+			rs.close();
+		} catch (SQLException e) {
+			Utility.debug(e);
+		}
+
 	}
 
 	private int createMapperEntry(MapperEntry mapper_e) {
@@ -241,7 +378,6 @@ public class DBConnection {
 		}
 
 	}
-
 
 	/**
 	 * fill {@link JSONArray} containing messages to database checked and its
@@ -334,15 +470,16 @@ public class DBConnection {
 				}
 				rs.close();
 			}
-
-			query = "select l.user_id,title,text,time,n.id,um.course,um.section,um.year,um.branch from notification as n join user_mapper as um on n.target=um.id join login as l on n.faculty_id=l.id where um.course IN ('All','"
-					+ course
-					+ "') and um.branch IN ('All','"
-					+ branch
-					+ "')"
-					+ (is_faculty ? "" : (" and um.section IN ('All','"
-							+ section + "') and um.year IN ('0','"
-							+ String.valueOf(year) + "')"));
+			query = "select l.user_id,title,text,time,n.id,um.course,um.section,um.year,um.branch from notification as n join user_mapper as um on n.target=um.id join login as l "
+					+ "on n.faculty_id=l.id join user_notification_map as unm on n.id=unm.notification_id where unm.user_id=(select id from login where user_id='"
+					+ userid + "')";
+			System.out.println(query);
+			/*
+			 * where um.course IN ('All','" + course +
+			 * "') and um.branch IN ('All','" + branch + "')" + (is_faculty ? ""
+			 * : (" and um.section IN ('All','" + section +
+			 * "') and um.year IN ('0','" + String.valueOf(year) + "')"));
+			 */
 
 			rs = stm.executeQuery(query);
 			JSONObject notification;
@@ -416,22 +553,22 @@ public class DBConnection {
 	}
 
 	public Boolean is_new_message(String userid) {
-		try{	
+		try {
 			String query = "SELECT sender,text from messages"
 					+ " where state = 0 "
-					+ "and receiver= (select id from login where user_id = '"+userid+"')";
+					+ "and receiver= (select id from login where user_id = '"
+					+ userid + "')";
 			System.out.println(query);
 			Statement stm = conn.createStatement();
-			ResultSet rs=stm.executeQuery(query);
+			ResultSet rs = stm.executeQuery(query);
 			System.out.println(rs.next());
 			return rs.next();
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			Utility.debug(e);
 			return false;
-			}
+		}
 	}
-	
+
 	public boolean authorizeUser(String userid, String token) {
 		// System.out.print("authorizing user " + userid + " with token " +
 		// token);
@@ -461,7 +598,6 @@ public class DBConnection {
 			return false;
 		}
 	}
-
 
 	public InitialData getInitialData() {
 
@@ -549,33 +685,47 @@ public class DBConnection {
 		}
 	}
 
-	public void updateNotificationState(JSONArray msgids) {
-
-		int len = msgids.length();
+	public void updateNotificationState(JSONArray noti_ids, String userid) {
+		int len = noti_ids.length();
+		int id = 0;
+		String queryid = null;
 		if (len > 0) {
 			try {
-
+				/*
+				 * StringBuilder query = new StringBuilder(
+				 * "update notification set state=");
+				 * query.append(Constants.STATE.SENT);
+				 * query.append(" where id IN ("); for (int i = 0; i < len; i++)
+				 * { query.append(msgids.getInt(i));
+				 * query.append(DbConstants.COMMA); }
+				 * query.deleteCharAt(query.length() - 1);
+				 * query.append(DbConstants.PARENTESIS_CLOSE);
+				 */
+				Statement stm = conn.createStatement();
+				queryid = "select id from login where user_id='"
+						+ Utility.decode(userid) + "'";
+				ResultSet rs = stm.executeQuery(queryid);
+				if (rs.next()) {
+					id = rs.getInt(1);
+				}
 				StringBuilder query = new StringBuilder(
-						"update notification set state=");
-				query.append(Constants.STATE.SENT);
-				query.append(" where id IN (");
+						"DELETE from user_notification_map where (notification_id,user_id) IN (");
 				for (int i = 0; i < len; i++) {
-					query.append(msgids.getInt(i));
+					query.append(DbConstants.PARENTESIS_OPEN);
+					query.append(noti_ids.getInt(i));
+					query.append(DbConstants.COMMA);
+					query.append(id);
+					query.append(DbConstants.PARENTESIS_CLOSE);
 					query.append(DbConstants.COMMA);
 				}
 				query.deleteCharAt(query.length() - 1);
 				query.append(DbConstants.PARENTESIS_CLOSE);
-
-				Statement stm = conn.createStatement();
-
 				stm.executeUpdate(query.toString());
-
 			} catch (Exception e) {
 				Utility.debug(e);
 			}
 		}
 	}
-
 
 	public boolean checkLogin(String user, String pwd, boolean is_faculty) {
 
@@ -614,7 +764,6 @@ public class DBConnection {
 			return false;
 		}
 	}
-
 
 	public User getPersonalInfo(String user_id, Boolean is_faculty) {
 		String query;

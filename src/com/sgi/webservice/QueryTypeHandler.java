@@ -219,7 +219,7 @@ public class QueryTypeHandler {
 				}
 				if (ids.has(Constants.JSONKEYS.NOTIFICATIONS.ACK)) {
 					db.updateNotificationState(ids
-							.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ACK));
+							.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ACK),userid);
 				}
 				result.put(Constants.JSONKEYS.TAG,
 						Constants.JSONKEYS.TAG_MSGS.ACKS);
