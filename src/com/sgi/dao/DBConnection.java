@@ -123,6 +123,7 @@ public class DBConnection {
 	public JSONArray fillNotifications(JSONArray notifications, String userid) {
 		JSONArray noti_ids = new JSONArray();
 		try {
+
 			int len = notifications.length();
 			if (len > 0) {
 				// get the pk of user with userid
@@ -143,6 +144,7 @@ public class DBConnection {
 				int j = 1;
 				JSONObject notification;
 				MapperEntry mapper_e = null;
+				ArrayList<MapperEntry> mapper_list = new ArrayList<MapperEntry>();
 				int target_id;
 				for (int i = 0; i < len; i++) {
 					notification = notifications.getJSONObject(i);				
@@ -157,6 +159,7 @@ public class DBConnection {
 									.getString(Constants.JSONKEYS.NOTIFICATIONS.YEAR),
 							notification
 									.getString(Constants.JSONKEYS.NOTIFICATIONS.SECTION));
+					mapper_list.add(mapper_e);
 					target_id = createMapperEntry(mapper_e);
 					if (target_id != -1) {
 						stm.setInt(j, sender_pk);
@@ -174,10 +177,7 @@ public class DBConnection {
 						stm.setInt(
 								j + 5,
 								notification
-										.getString(
-												Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY)
-										.equalsIgnoreCase("Y") ? Constants.FOR_FACULTY.YES
-										: Constants.FOR_FACULTY.NO);
+										.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY));
 						noti_ids.put(notification
 								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
 
@@ -191,16 +191,19 @@ public class DBConnection {
 				}
 				if (stm.executeUpdate() > 0) {
 					ResultSet rs = stm.getGeneratedKeys();
+					int i = 0;
 					while (rs.next()) {
-						fill_user_notification_map(mapper_e, rs.getInt(1));
+						fill_user_notification_map(mapper_list.get(i),
+								rs.getInt(1), sender_pk);
+						i++;
+
 					}
 				}
-				// insert notifications with pending state set by default in db
+				// insert notifications with state(PENDING) set by default in db
 			}
 		} catch (Exception e) {
 			Utility.debug(e);
 		}
-		// System.out.println("noti acks" + noti_ids);
 		return noti_ids;
 	}
 
@@ -213,13 +216,13 @@ public class DBConnection {
 	 */
 
 	private void fill_user_notification_map(MapperEntry mapper_e,
-			int notification_id) {
+			int notification_id, int sender_pk_id) {
 
 		ResultSet rs;
 		Statement stm;
 		PreparedStatement prep_stm;
 		String query_temp = null;
-		int rs_size = -1, j = 1;
+		int rs_size, j = 1;
 
 		StringBuilder query_stud = new StringBuilder(
 				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
@@ -227,10 +230,9 @@ public class DBConnection {
 				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
 		String new_values = " (?,?,?)";
 		try {
-			/**
-			 * Case 1 : course = ALL
-			 */			
-			if ((mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO)) {
+			
+			//adding students
+			if (mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO) {
 				if (mapper_e.COURSE.equalsIgnoreCase("all")) {
 					query_temp = " select id,is_faculty from login where is_faculty='N'";
 
@@ -264,9 +266,10 @@ public class DBConnection {
 				rs = stm.executeQuery(query_temp); // rs contains all the users
 				rs.last();
 				rs_size = rs.getRow();
-				System.out.println("fetch sizze is" + rs.getRow());
+				System.out.print(rs_size + " students and ");
 				if (rs_size > 0) {
 					rs.beforeFirst();
+
 					for (int i = 0; i < rs_size; i++) {
 						query_stud.append(new_values);
 						query_stud.append(DbConstants.COMMA);
@@ -281,30 +284,32 @@ public class DBConnection {
 						j += 3;
 					}
 					prep_stm.executeUpdate();
+					rs.close();
 				}
-				rs.close();
 			}
 			// students added in list..
 			// now select target faculty
 			j = 1;
 			if (mapper_e.COURSE.equalsIgnoreCase("all")) {
-				query_temp = " select id,is_faculty from login where is_faculty='Y'";
+				query_temp = " select id,is_faculty from login where is_faculty='Y' and login.id<>"
+						+ sender_pk_id;
 			} else {
 				query_temp = " select l.id,is_faculty from login as l"
 						+ " join faculty as f on l.id=f.l_id"
 						+ " join branches as b on f.branch_id=b.id"
 						+ " join courses as c on b.course_id=c.id"
-						+ " where c.name='" + mapper_e.COURSE + "'";
+						+ " where l.id<>" + sender_pk_id + " and c.name='"
+						+ mapper_e.COURSE + "'";
 				if (!mapper_e.BRANCH.equalsIgnoreCase("all")) {
 					query_temp += " and b.name ='" + mapper_e.BRANCH + "'";
 				}
-				System.out.println(query_temp);
 			}
 			stm = conn.createStatement();
 			rs = stm.executeQuery(query_temp); // rs contains all the users
 			rs.last();
 			rs_size = rs.getRow();
-			System.out.println("fetch sizze is" + rs.getRow());
+			System.out.println(rs_size
+					+ " faculties are targetted for new notification");
 			if (rs_size > 0) {
 				rs.beforeFirst();
 				for (int i = 0; i < rs_size; i++) {
@@ -322,8 +327,9 @@ public class DBConnection {
 					j += 3;
 				}
 				prep_stm.executeUpdate();
+				rs.close();
 			}
-			rs.close();
+
 		} catch (SQLException e) {
 			Utility.debug(e);
 		}
@@ -445,44 +451,12 @@ public class DBConnection {
 		JSONArray notifications = new JSONArray();
 
 		try {
-			// find out user category and fetch notification accordingly
 			String query;
 			ResultSet rs;
 			Statement stm = conn.createStatement();
-		/*	String course, branch, section;
-			int year = 0;
-			course = branch = section = null;
-			if (!is_faculty) {
-				query = "select c.name,b.name,y.year,se.name from login as l join students as s on l.id=s.l_id join sections as se on s.section_id=se.id join year as y on se.year_id=y.id join branches as b on y.branch_id=b.id join courses as c on b.course_id=c.id  where l.user_id='"
-						+ userid.toUpperCase() + "' ";
-				rs = stm.executeQuery(query);
-				if (rs.next()) {
-					course = rs.getString(1);
-					branch = rs.getString(2);
-					year = rs.getInt(3);
-					section = rs.getString(4);
-				}
-				rs.close();
-			} else {
-				query = "select c.name,b.name from login as l join faculty as f on l.id=f.l_id join branches as b on f.branch_id=b.id join courses as c on b.course_id=c.id  where l.user_id='"
-						+ userid.toUpperCase() + "' ";
-				rs = stm.executeQuery(query);
-				if (rs.next()) {
-					course = rs.getString(1);
-					branch = rs.getString(2);
-				}
-				rs.close();
-			}  */
 			query = "select l.user_id,title,text,time,n.id,um.course,um.section,um.year,um.branch from notification as n join user_mapper as um on n.target=um.id join login as l "
 					+ "on n.faculty_id=l.id join user_notification_map as unm on n.id=unm.notification_id where unm.user_id=(select id from login where user_id='"
 					+ userid + "')";
-			System.out.println(query);
-			/*
-			 * where um.course IN ('All','" + course +
-			 * "') and um.branch IN ('All','" + branch + "')" + (is_faculty ? ""
-			 * : (" and um.section IN ('All','" + section +
-			 * "') and um.year IN ('0','" + String.valueOf(year) + "')"));
-			 */
 
 			rs = stm.executeQuery(query);
 			JSONObject notification;

@@ -3,8 +3,6 @@ package com.sgi.util;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 
-import javax.swing.text.AbstractDocument.Content;
-
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;

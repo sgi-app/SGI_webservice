@@ -4,7 +4,7 @@ public class DbStructure {
 	public static String DB_CLASS = "com.mysql.jdbc.Driver";
 	public static String DB_NAME = "sgi_app";
 	public static String DB_USER = "root";
-	public static String DB_PASSWORD = "praveen";
+	public static String DB_PASSWORD = "1234";
 	public static String DB_URL = "jdbc:mysql://localhost/" + DB_NAME
 			+ "?user=" + DB_USER + "&password=" + DB_PASSWORD;
 
