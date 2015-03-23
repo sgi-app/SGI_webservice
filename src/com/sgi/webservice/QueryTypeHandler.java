@@ -218,8 +218,9 @@ public class QueryTypeHandler {
 							.getJSONArray(Constants.JSONKEYS.MESSAGES.ACK));
 				}
 				if (ids.has(Constants.JSONKEYS.NOTIFICATIONS.ACK)) {
-					db.updateNotificationState(ids
-							.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ACK),userid);
+					db.updateNotificationState(
+							ids.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ACK),
+							userid);
 				}
 				result.put(Constants.JSONKEYS.TAG,
 						Constants.JSONKEYS.TAG_MSGS.ACKS);
@@ -273,10 +274,31 @@ public class QueryTypeHandler {
 				while ((str = br.readLine()) != null) {
 					strb.append(str);
 				}
+				JSONArray msg_ack_ids, noti_ack_ids, new_messages, new_notifications, messages, notifications;
+				msg_ack_ids = noti_ack_ids = null;
+
 				// have problem if there is no data
 				if (strb.toString().trim().length() > 0) {
 					data = new JSONObject(strb.toString());
 					System.out.println("sync data received" + data.toString());
+
+					// insert the data into database if there is data
+					if (data.has(Constants.JSONKEYS.MESSAGES.MESSAGES)) {
+						messages = data
+								.getJSONArray(Constants.JSONKEYS.MESSAGES.MESSAGES);
+						if (messages.length() > 0)
+							msg_ack_ids = db.fillMessages(messages, d_userid);
+					}
+					if (is_faculty) {
+						if (data.has(Constants.JSONKEYS.NOTIFICATIONS.NOTIFICATIONS)) {
+							notifications = data
+									.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.NOTIFICATIONS);
+
+							if (notifications.length() > 0)
+								noti_ack_ids = db.fillNotifications(
+										notifications, d_userid);
+						}
+					}
 				} else {
 					// to avoid null error later in
 					data = new JSONObject();
@@ -284,28 +306,6 @@ public class QueryTypeHandler {
 							.println("sync no data only credentials received");
 				}
 
-				// insert the data into database
-				// for now just print them
-
-				JSONArray msg_ack_ids, noti_ack_ids, new_messages, new_notifications, messages, notifications;
-				msg_ack_ids = noti_ack_ids = null;
-				if (data.has(Constants.JSONKEYS.MESSAGES.MESSAGES)) {
-					messages = data
-							.getJSONArray(Constants.JSONKEYS.MESSAGES.MESSAGES);
-					if (messages.length() > 0)
-						msg_ack_ids = db.fillMessages(messages, d_userid);
-				}
-				if (is_faculty) {
-					if (data.has(Constants.JSONKEYS.NOTIFICATIONS.NOTIFICATIONS)) {
-						notifications = data
-								.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.NOTIFICATIONS);
-
-						if (notifications.length() > 0)
-							noti_ack_ids = db.fillNotifications(notifications,
-									d_userid);
-					}
-				}
-				// System.out.println("data inserted now getting data");
 				// get data from db for this user
 				new_messages = db.getMessagesFromDb(d_userid);
 				new_notifications = db.getNotificationsFromDb(d_userid,
@@ -333,14 +333,11 @@ public class QueryTypeHandler {
 		} finally {
 			db.closeConnection();
 		}
-		System.out.println("Sending this" + new_data.toString());
+		if (new_data.length() > 0)
+			System.out.println("Sending this" + new_data.toString());
+		else
+			System.out.println("Sending nothing");
+
 		return new_data.toString();
 	}
-
-	/*
-	 * private String responceGenerator(boolean result, String msg) { JSONObject
-	 * obj = new JSONObject(); try { obj.put(Constants.JSONKEYS.STATUS, result);
-	 * obj.put(Constants.JSONKEYS.ERROR, msg); } catch (JSONException e) {
-	 * e.printStackTrace(); } return obj.toString(); }
-	 */
 }
