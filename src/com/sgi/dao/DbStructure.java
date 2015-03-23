@@ -66,6 +66,8 @@ public class DbStructure {
 		String COLUMN_TIME = "time";
 		String COLUMN_TITLE = "title";
 		String COLUMN_TARGET = "target";
+		String COLUMN_STATE = "state";
+		String COLUMN_FOR_FACULTY = "for_faculty";
 	}
 
 	public static interface MESSAGES {

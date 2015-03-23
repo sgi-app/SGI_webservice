@@ -145,7 +145,7 @@ public class DBConnection {
 				MapperEntry mapper_e = null;
 				int target_id;
 				for (int i = 0; i < len; i++) {
-					notification = notifications.getJSONObject(i);
+					notification = notifications.getJSONObject(i);				
 					mapper_e = new MapperEntry(
 							notification
 									.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY),
@@ -224,13 +224,13 @@ public class DBConnection {
 		StringBuilder query_stud = new StringBuilder(
 				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
 		StringBuilder query_fac = new StringBuilder(
-				"insert into user_notification_map(notification_id,user_id,is_faculty) values");		
+				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
 		String new_values = " (?,?,?)";
 		try {
 			/**
 			 * Case 1 : course = ALL
-			 */
-			if (!(mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO)) {
+			 */			
+			if ((mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO)) {
 				if (mapper_e.COURSE.equalsIgnoreCase("all")) {
 					query_temp = " select id,is_faculty from login where is_faculty='N'";
 
@@ -259,32 +259,34 @@ public class DBConnection {
 					}
 					System.out.println("" + query_temp);
 				}
-			
-			stm = conn.createStatement();
-			rs = stm.executeQuery(query_temp); // rs contains all the users
-			rs.last();
-			rs_size = rs.getRow();
-			System.out.println("fetch sizze is" + rs.getRow());
-			rs.beforeFirst();
-			
-			for (int i = 0; i < rs_size; i++) {
-				query_stud.append(new_values);
-				query_stud.append(DbConstants.COMMA);
-			}
-			query_stud.deleteCharAt(query_stud.length() - 1);
-			prep_stm = conn.prepareStatement(query_stud.toString());
-			while (rs.next()) { // insert all users in rs into u_n_map table
-				prep_stm.setInt(j, notification_id);
-				prep_stm.setInt(j + 1, rs.getInt(1));
-				prep_stm.setString(j + 2, rs.getString(2));
-				j += 3;
-			}
-			prep_stm.executeUpdate();
-			rs.close();
+
+				stm = conn.createStatement();
+				rs = stm.executeQuery(query_temp); // rs contains all the users
+				rs.last();
+				rs_size = rs.getRow();
+				System.out.println("fetch sizze is" + rs.getRow());
+				if (rs_size > 0) {
+					rs.beforeFirst();
+					for (int i = 0; i < rs_size; i++) {
+						query_stud.append(new_values);
+						query_stud.append(DbConstants.COMMA);
+					}
+					query_stud.deleteCharAt(query_stud.length() - 1);
+					prep_stm = conn.prepareStatement(query_stud.toString());
+					while (rs.next()) { // insert all users in rs into u_n_map
+										// table
+						prep_stm.setInt(j, notification_id);
+						prep_stm.setInt(j + 1, rs.getInt(1));
+						prep_stm.setString(j + 2, rs.getString(2));
+						j += 3;
+					}
+					prep_stm.executeUpdate();
+				}
+				rs.close();
 			}
 			// students added in list..
 			// now select target faculty
-			j = 1 ;
+			j = 1;
 			if (mapper_e.COURSE.equalsIgnoreCase("all")) {
 				query_temp = " select id,is_faculty from login where is_faculty='Y'";
 			} else {
@@ -303,23 +305,24 @@ public class DBConnection {
 			rs.last();
 			rs_size = rs.getRow();
 			System.out.println("fetch sizze is" + rs.getRow());
-			rs.beforeFirst();
+			if (rs_size > 0) {
+				rs.beforeFirst();
+				for (int i = 0; i < rs_size; i++) {
+					query_fac.append(new_values);
+					query_fac.append(DbConstants.COMMA);
+				}
+				query_fac.deleteCharAt(query_fac.length() - 1);
 
-			for (int i = 0; i < rs_size; i++) {
-				query_fac.append(new_values);
-				query_fac.append(DbConstants.COMMA);
+				prep_stm = conn.prepareStatement(query_fac.toString());
+
+				while (rs.next()) { // insert all users in rs into u_n_map table
+					prep_stm.setInt(j, notification_id);
+					prep_stm.setInt(j + 1, rs.getInt(1));
+					prep_stm.setString(j + 2, rs.getString(2));
+					j += 3;
+				}
+				prep_stm.executeUpdate();
 			}
-			query_fac.deleteCharAt(query_fac.length() - 1);
-
-			prep_stm = conn.prepareStatement(query_fac.toString());
-
-			while (rs.next()) { // insert all users in rs into u_n_map table
-				prep_stm.setInt(j, notification_id);
-				prep_stm.setInt(j + 1, rs.getInt(1));
-				prep_stm.setString(j + 2, rs.getString(2));
-				j += 3;
-			}
-			prep_stm.executeUpdate();
 			rs.close();
 		} catch (SQLException e) {
 			Utility.debug(e);
@@ -446,7 +449,7 @@ public class DBConnection {
 			String query;
 			ResultSet rs;
 			Statement stm = conn.createStatement();
-			String course, branch, section;
+		/*	String course, branch, section;
 			int year = 0;
 			course = branch = section = null;
 			if (!is_faculty) {
@@ -469,7 +472,7 @@ public class DBConnection {
 					branch = rs.getString(2);
 				}
 				rs.close();
-			}
+			}  */
 			query = "select l.user_id,title,text,time,n.id,um.course,um.section,um.year,um.branch from notification as n join user_mapper as um on n.target=um.id join login as l "
 					+ "on n.faculty_id=l.id join user_notification_map as unm on n.id=unm.notification_id where unm.user_id=(select id from login where user_id='"
 					+ userid + "')";

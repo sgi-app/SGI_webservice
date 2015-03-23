@@ -1,6 +1,7 @@
 package com.sgi.webservice;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -343,4 +344,24 @@ public class QueryTypeHandler {
 	 * obj.put(Constants.JSONKEYS.ERROR, msg); } catch (JSONException e) {
 	 * e.printStackTrace(); } return obj.toString(); }
 	 */
+	
+	@POST
+	@Path("/download_file")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)	
+	public String download_file(
+			@QueryParam(Constants.QueryParameters.INPUT_STREAM) FileInputStream inputstream,
+			@QueryParam(Constants.QueryParameters.FILE_NAME) String filename) {
+	/*	String target="D:/";
+		try {
+			Files.copy(inputstream,Paths.get("RECEIVED_" + filename) , StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} */
+		System.out.println("hilo world"+filename);
+		return "";
+	}	
 }
+
+

@@ -22,7 +22,9 @@ public interface Constants {
 		String IS_FACULTY = "is_faculty";
 		String MSGIDS = "message_ids";
 		String MESSAGES = "messages";
-
+		String FILE_NAME = "file_name";
+		String INPUT_STREAM = "input_stream";
+		
 		public interface Notification {
 			String SUBJECT = "subject";
 			String BODY = "body";
