@@ -20,18 +20,18 @@ public class Utility {
 			obj.put(Constants.JSONKEYS.STATUS, statusr);
 			if (statusr) {
 				User user = db.getPersonalInfo(user_id, is_faculty);
-			//	System.out.println("in status true");
-				
-			//	System.out.print(user);
-				
+				// System.out.println("in status true");
+
+				// System.out.print(user);
+
 				obj.put(Constants.JSONKEYS.FIRST_NAME, user.f_name);
 				obj.put(Constants.JSONKEYS.LAST_NAME, user.l_name);
 				obj.put(Constants.JSONKEYS.PROFILE_IMAGE, user.picUrl);
-				//obj.put(Constants.JSONKEYS.BRANCH, user.branch);
+				// obj.put(Constants.JSONKEYS.BRANCH, user.branch);
 				if (is_faculty) {
 					FacultyFull f_user = (FacultyFull) user;
 					obj.put(Constants.JSONKEYS.BRANCH, f_user.branch);
-					
+
 					obj.put(Constants.JSONKEYS.CITY, f_user.city);
 					obj.put(Constants.JSONKEYS.H_MOB, f_user.h_mob);
 					obj.put(Constants.JSONKEYS.P_MOB, f_user.p_mob);
@@ -43,7 +43,7 @@ public class Utility {
 					StudentFull s_user = (StudentFull) user;
 					obj.put(Constants.JSONKEYS.SECTION, s_user.section);
 					obj.put(Constants.JSONKEYS.YEAR, s_user.year);
-					
+
 					obj.put(Constants.JSONKEYS.ROLL_NO, s_user.u_roll_no);
 				}
 
@@ -53,7 +53,7 @@ public class Utility {
 		} catch (Exception e) {
 			return ConstructJSON(db, tagr, false, null, null, e.getMessage());
 		}
-		//System.out.println(obj.toString());
+		// System.out.println(obj.toString());
 		return obj.toString();
 	}
 
@@ -76,10 +76,10 @@ public class Utility {
 				tmpobj.put(Constants.JSONKEYS.LAST_NAME, tmpusr.l_name);
 				tmpobj.put(Constants.JSONKEYS.USER_ID, tmpusr.user_id);
 				tmpobj.put(Constants.JSONKEYS.PROFILE_IMAGE, tmpusr.picUrl);
-				//tmpobj.put(Constants.JSONKEYS.BRANCH, tmpusr.branch);
+				// tmpobj.put(Constants.JSONKEYS.BRANCH, tmpusr.branch);
 				tmpobj.put(Constants.JSONKEYS.YEAR, tmpusr.year);
 				tmpobj.put(Constants.JSONKEYS.SECTION, tmpusr.section);
-				//tmpobj.put(Constants.JSONKEYS.COURSE, tmpusr.course);
+				// tmpobj.put(Constants.JSONKEYS.COURSE, tmpusr.course);
 
 				obja.put(tmpobj);
 			} else {
@@ -90,7 +90,7 @@ public class Utility {
 				tmpobj.put(Constants.JSONKEYS.LAST_NAME, tmpusr.l_name);
 				tmpobj.put(Constants.JSONKEYS.PROFILE_IMAGE, tmpusr.picUrl);
 				tmpobj.put(Constants.JSONKEYS.BRANCH, tmpusr.branch);
-				//tmpobj.put(Constants.JSONKEYS.COURSE, tmpusr.course);
+				// tmpobj.put(Constants.JSONKEYS.COURSE, tmpusr.course);
 				tmpobj.put(Constants.JSONKEYS.USER_ID, tmpusr.user_id);
 				obja.put(tmpobj);
 			}

@@ -1,9 +1,12 @@
 package com.sgi.webservice;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -12,6 +15,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -21,7 +25,10 @@ import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
 import com.sgi.util.Notification;
 import com.sgi.util.Utility;
+import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.core.util.Base64;
+import com.sun.jersey.multipart.FormDataMultiPart;
+import com.sun.jersey.multipart.FormDataParam;
 
 @Path("/query")
 public class QueryTypeHandler {
@@ -339,5 +346,39 @@ public class QueryTypeHandler {
 			System.out.println("Sending nothing");
 
 		return new_data.toString();
+	}
+
+	@POST
+	@Path("/upload_file")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getFile(@FormDataParam("file") InputStream inputStream,
+			@FormDataParam("file") FormDataContentDisposition fileDetail) {
+		System.out.println("got ya");
+		JSONObject jobj = new JSONObject();
+		String file_name = fileDetail.getFileName();
+
+		try {
+			OutputStream out = null;
+			int read = 0;
+			byte[] bytes = new byte[1024];
+
+			out = new FileOutputStream(new File("D://new/" + file_name));
+
+			while ((read = inputStream.read(bytes)) != -1) {
+				out.write(bytes, 0, read);
+			}
+			out.flush();
+			out.close();
+			jobj.put("status", "true");
+		} catch (JSONException | IOException e) {
+			e.printStackTrace();
+			try {
+				jobj.put("status", "false");
+			} catch (JSONException ee) {
+				ee.printStackTrace();
+			}
+		}
+		return jobj.toString();
 	}
 }

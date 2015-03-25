@@ -22,6 +22,7 @@ public interface Constants {
 		String IS_FACULTY = "is_faculty";
 		String MSGIDS = "message_ids";
 		String MESSAGES = "messages";
+		String FILE_NAME = "file_name";
 
 		public interface Notification {
 			String SUBJECT = "subject";
@@ -29,12 +30,18 @@ public interface Constants {
 			String TIME = "time";
 		}
 
-
+		public static interface FILES {
+			String NAME = "file_name";
+			String INPUT_STREAM = "file_input_stream";
+			String DESC = "desc";
+		}
 	}
+
 	public interface FOR_FACULTY {
 		int YES = 0;
 		int NO = 1;
 	}
+
 	/**
 	 * states of messages or notifications on sever send pending or to send
 	 * 
