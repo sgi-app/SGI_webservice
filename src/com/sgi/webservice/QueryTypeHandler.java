@@ -1,7 +1,9 @@
 package com.sgi.webservice;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -342,30 +344,61 @@ public class QueryTypeHandler {
 		return new_data.toString();
 	}
 
-	/*
-	 * private String responceGenerator(boolean result, String msg) { JSONObject
-	 * obj = new JSONObject(); try { obj.put(Constants.JSONKEYS.STATUS, result);
-	 * obj.put(Constants.JSONKEYS.ERROR, msg); } catch (JSONException e) {
-	 * e.printStackTrace(); } return obj.toString(); }
-	 */
-	
 	@POST
 	@Path("/download_file")
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)	
-	public String download_file(
-			@QueryParam(Constants.QueryParameters.INPUT_STREAM) FileInputStream inputstream,
-			@QueryParam(Constants.QueryParameters.FILE_NAME) String filename) {
-	/*	String target="D:/";
+	@Produces(MediaType.APPLICATION_JSON)
+	public String download_file(InputStream in) {
+		StringBuilder stb = new StringBuilder();
+
+		JSONObject done = new JSONObject();
+		String file_string = null;
+		String filename = null;
+		System.out.println("hilo world");
 		try {
-			Files.copy(inputstream,Paths.get("RECEIVED_" + filename) , StandardCopyOption.REPLACE_EXISTING);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			while ((file_string = br.readLine()) != null) {
+				stb.append(file_string);
+			}
+			JSONObject jsonob = new JSONObject(stb.toString());
+			file_string = jsonob
+					.getString(Constants.QueryParameters.INPUT_STREAM);
+			filename = jsonob.getString(Constants.QueryParameters.FILE_NAME);
+		} catch (JSONException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		byte[] bytes = Base64.decode(file_string);
+		File file = new File("D://" + filename);
+		FileOutputStream fop;
+		try {
+			fop = new FileOutputStream(file);
+			fop.write(bytes);
+			fop.flush();
+			fop.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} */
-		System.out.println("hilo world"+filename);
-		return "";
-	}	
+		}
+
+		return done.toString();
+	}
 }
 
-
+/*
+ * System.out.println("yo m called");
+ * 
+ * // InputStream inputStream = null; OutputStream outputStream = null; byte[]
+ * bytes = new byte[1024]; int read = 0;
+ * 
+ * // BufferedReader br= new BufferedReader(new //
+ * InputStreamReader(inputstream)); try { outputStream = new
+ * FileOutputStream(new File("D:/new.doc")); while ((read =
+ * inputstream.read(bytes)) != -1) { outputStream.write(bytes, 0, read); } }
+ * catch (IOException e) { // TODO Auto-generated catch block
+ * e.printStackTrace(); } try { inputstream.close(); outputStream.close(); }
+ * catch (IOException e) { e.printStackTrace(); }
+ */
