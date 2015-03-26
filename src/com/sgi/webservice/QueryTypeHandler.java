@@ -2,11 +2,11 @@ package com.sgi.webservice;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -15,6 +15,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -24,7 +25,10 @@ import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
 import com.sgi.util.Notification;
 import com.sgi.util.Utility;
+import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.core.util.Base64;
+import com.sun.jersey.multipart.FormDataMultiPart;
+import com.sun.jersey.multipart.FormDataParam;
 
 @Path("/query")
 public class QueryTypeHandler {
@@ -345,46 +349,37 @@ public class QueryTypeHandler {
 	}
 
 	@POST
-	@Path("/download_file")
-	@Consumes(MediaType.APPLICATION_JSON)
+	@Path("/upload_file")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String download_file(InputStream in) {
-		StringBuilder stb = new StringBuilder();
+	public String getFile(@FormDataParam("file") InputStream inputStream,
+			@FormDataParam("file") FormDataContentDisposition fileDetail) {
+		System.out.println("got ya");
+		JSONObject jobj = new JSONObject();
+		String file_name = fileDetail.getFileName();
 
-		JSONObject done = new JSONObject();
-		String file_string = null;
-		String filename = null;
-		System.out.println("hilo world");
 		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(in));
-			while ((file_string = br.readLine()) != null) {
-				stb.append(file_string);
+			OutputStream out = null;
+			int read = 0;
+			byte[] bytes = new byte[1024];
+
+			out = new FileOutputStream(new File("D://new/" + file_name));
+
+			while ((read = inputStream.read(bytes)) != -1) {
+				out.write(bytes, 0, read);
 			}
-			JSONObject jsonob = new JSONObject(stb.toString());
-			file_string = jsonob
-					.getString(Constants.QueryParameters.INPUT_STREAM);
-			filename = jsonob.getString(Constants.QueryParameters.FILE_NAME);
+			out.flush();
+			out.close();
+			jobj.put("status", "true");
 		} catch (JSONException | IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			try {
+				jobj.put("status", "false");
+			} catch (JSONException ee) {
+				ee.printStackTrace();
+			}
 		}
-		byte[] bytes = Base64.decode(file_string);
-		File file = new File("D://" + filename);
-		FileOutputStream fop;
-		try {
-			fop = new FileOutputStream(file);
-			fop.write(bytes);
-			fop.flush();
-			fop.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return done.toString();
+		return jobj.toString();
 	}
 }
 
