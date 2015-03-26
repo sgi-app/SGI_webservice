@@ -15,7 +15,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -27,7 +26,6 @@ import com.sgi.util.Notification;
 import com.sgi.util.Utility;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.core.util.Base64;
-import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.FormDataParam;
 
 @Path("/query")
@@ -352,8 +350,8 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getFile(@FormDataParam("file") InputStream inputStream,
-			@FormDataParam("file") FormDataContentDisposition fileDetail) {
+	public String getFile(@FormDataParam(Constants.QueryParameters.FILE) InputStream inputStream,
+			@FormDataParam(Constants.QueryParameters.FILE) FormDataContentDisposition fileDetail) {
 		System.out.println("got ya");
 		JSONObject jobj = new JSONObject();
 		String file_name = fileDetail.getFileName();
