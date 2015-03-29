@@ -1,7 +1,7 @@
 package com.sgi.util;
 
 public class Faculty extends User {
-	String branch;
+	public String branch;
 
 	public Faculty(String f_name_, String l_name_, String picUrl_,
 			String branch_, String user_id_) {

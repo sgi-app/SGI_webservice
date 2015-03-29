@@ -30,14 +30,13 @@ import com.sun.jersey.multipart.FormDataParam;
 
 @Path("/query")
 public class QueryTypeHandler {
-
 	@GET
 	@Path("/type_resolver")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String typeResolver(
 			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
 			@QueryParam(Constants.QueryParameters.TOKEN) String token,
-			@QueryParam(Constants.QueryParameters.USER_TYPE) boolean student,
+			@QueryParam(Constants.QueryParameters.USER_TYPE) boolean is_faculty,
 			@QueryParam(Constants.QueryParameters.BRANCH) String branch,
 			@QueryParam(Constants.QueryParameters.YEAR) int year,
 			@QueryParam(Constants.QueryParameters.SECTION) String section,
@@ -45,7 +44,7 @@ public class QueryTypeHandler {
 		DBConnection db = new DBConnection();
 		String str = null;
 		if (db.authorizeUser(userid, token)) {
-			if (student) {
+			if (!is_faculty) {
 				System.out.println("sending students list");
 				str = db.send_student_list(year, branch, course, section);
 			} else {
@@ -299,9 +298,10 @@ public class QueryTypeHandler {
 							notifications = data
 									.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.NOTIFICATIONS);
 
-							if (notifications.length() > 0)
+							if (notifications.length() > 0) {
 								noti_ack_ids = db.fillNotifications(
 										notifications, d_userid);
+							}
 						}
 					}
 				} else {
@@ -350,7 +350,8 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getFile(@FormDataParam(Constants.QueryParameters.FILE) InputStream inputStream,
+	public String getFile(
+			@FormDataParam(Constants.QueryParameters.FILE) InputStream inputStream,
 			@FormDataParam(Constants.QueryParameters.FILE) FormDataContentDisposition fileDetail) {
 		System.out.println("got ya");
 		JSONObject jobj = new JSONObject();
@@ -379,4 +380,5 @@ public class QueryTypeHandler {
 		}
 		return jobj.toString();
 	}
+
 }

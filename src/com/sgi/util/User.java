@@ -1,11 +1,11 @@
 package com.sgi.util;
 
 public class User {
-	String f_name;
-	String l_name;
+	public String f_name;
+	public String l_name;
 
-	String picUrl;
-	String user_id;
+	public String picUrl;
+	public String user_id;
 
 	public User(String f_name_, String l_name_, String picUrl_, String user_id_) {
 		f_name = f_name_;

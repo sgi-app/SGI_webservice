@@ -96,10 +96,19 @@ public interface Constants {
 		String H_MOB = "HMob";
 		String STREET = "Street";
 		String ERROR = "Error";
-
+		String INITIAL_DATA="initial_data";
+		String USER_DATA="user_data";
+		
+		String COURSES = "Courses";
+		String BRANCHES = "Branches";
+		String YEARS = "Years";
+		String SECTIONS = "Sections";
+		
 		String TOKEN = "Token";
 		String STATUS = "Status";
 		String TAG = "Tag";
+		String PSWD = "pswd";
+		String REG_ID = "reg_id";
 
 		public interface TAG_MSGS {
 			String LOGIN = "Login";

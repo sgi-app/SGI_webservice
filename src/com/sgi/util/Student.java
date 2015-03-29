@@ -1,8 +1,8 @@
 package com.sgi.util;
 
 public class Student extends User {
-	int year;
-	String section;
+	public int year;
+	public String section;
 
 	public Student(String f_name_, String l_name_, String user_id_,
 			String picUrl_, int yer_, String section_) {

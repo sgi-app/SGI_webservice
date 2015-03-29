@@ -12,7 +12,7 @@ import com.sgi.dao.DBConnection;
 import com.sun.jersey.core.util.Base64;
 
 public class Utility {
-	public static String ConstructJSON(DBConnection db, String tagr,
+	public static JSONObject ConstructJSON(DBConnection db, String tagr,
 			boolean statusr, String user_id, Boolean is_faculty, String msg) {
 		JSONObject obj = new JSONObject();
 		try {
@@ -54,10 +54,10 @@ public class Utility {
 			return ConstructJSON(db, tagr, false, null, null, e.getMessage());
 		}
 		// System.out.println(obj.toString());
-		return obj.toString();
+		return obj;
 	}
 
-	public static String ConstructJSON(DBConnection db, String tagr,
+	public static JSONObject ConstructJSON(DBConnection db, String tagr,
 			boolean statusr, String msg) {
 		return ConstructJSON(db, tagr, statusr, null, null, msg);
 	}

@@ -1,12 +1,12 @@
 package com.sgi.util;
 
 public class FacultyFull extends Faculty {
-	String street;
-	String city;
-	String state;
-	String pin;
-	String p_mob;
-	String h_mob;
+	public String street;
+	public String city;
+	public String state;
+	public String pin;
+	public String p_mob;
+	public String h_mob;
 
 	public FacultyFull(String f_name_, String l_name_, String branch_,
 			String picUrl_, String user_id_, String street_, String city_,

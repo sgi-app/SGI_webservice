@@ -1,5 +1,6 @@
 package com.sgi.dao;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -13,6 +14,9 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import com.google.android.gcm.server.Message;
+import com.google.android.gcm.server.MulticastResult;
+import com.google.android.gcm.server.Sender;
 import com.sgi.constants.Constants;
 import com.sgi.util.Faculty;
 import com.sgi.util.FacultyFull;
@@ -222,6 +226,7 @@ public class DBConnection {
 		Statement stm;
 		PreparedStatement prep_stm;
 		String query_temp = null;
+		ArrayList<String> reg_ids = new ArrayList<String>();
 		int rs_size, j = 1;
 
 		StringBuilder query_stud = new StringBuilder(
@@ -230,18 +235,18 @@ public class DBConnection {
 				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
 		String new_values = " (?,?,?)";
 		try {
-			
-			//adding students
+
+			// adding students
 			if (mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO) {
 				if (mapper_e.COURSE.equalsIgnoreCase("all")) {
-					query_temp = " select id,is_faculty from login where is_faculty='N'";
+					query_temp = " select id,is_faculty,login.reg_id from login where is_faculty='N'";
 
 				} else {
 					/**
 					 * Case 2 : Particular course selected
 					 */
 					// strb.append("sdawdy")
-					query_temp = " select login.id,is_faculty from login"
+					query_temp = " select login.id,is_faculty,login.reg_id from login"
 							+ " join students on login.id=students.l_id"
 							+ " join sections on students.section_id=sections.id"
 							+ " join year on sections.year_id=year.id"
@@ -276,11 +281,15 @@ public class DBConnection {
 					}
 					query_stud.deleteCharAt(query_stud.length() - 1);
 					prep_stm = conn.prepareStatement(query_stud.toString());
+					String reg_id;
 					while (rs.next()) { // insert all users in rs into u_n_map
 										// table
 						prep_stm.setInt(j, notification_id);
 						prep_stm.setInt(j + 1, rs.getInt(1));
 						prep_stm.setString(j + 2, rs.getString(2));
+						reg_id = rs.getString(3);
+						if (reg_id != null)
+							reg_ids.add(reg_id);
 						j += 3;
 					}
 					prep_stm.executeUpdate();
@@ -291,10 +300,10 @@ public class DBConnection {
 			// now select target faculty
 			j = 1;
 			if (mapper_e.COURSE.equalsIgnoreCase("all")) {
-				query_temp = " select id,is_faculty from login where is_faculty='Y' and login.id<>"
+				query_temp = " select id,is_faculty,login.reg_id from login where is_faculty='Y' and login.id<>"
 						+ sender_pk_id;
 			} else {
-				query_temp = " select l.id,is_faculty from login as l"
+				query_temp = " select l.id,is_faculty,l.reg_id from login as l"
 						+ " join faculty as f on l.id=f.l_id"
 						+ " join branches as b on f.branch_id=b.id"
 						+ " join courses as c on b.course_id=c.id"
@@ -320,15 +329,32 @@ public class DBConnection {
 				query_fac.deleteCharAt(query_fac.length() - 1);
 
 				prep_stm = conn.prepareStatement(query_fac.toString());
-
+				String reg_id;
 				while (rs.next()) { // insert all users in rs into u_n_map table
 					prep_stm.setInt(j, notification_id);
 					prep_stm.setInt(j + 1, rs.getInt(1));
 					prep_stm.setString(j + 2, rs.getString(2));
+					reg_id = rs.getString(3);
+					if (reg_id != null)
+						reg_ids.add(reg_id);
 					j += 3;
 				}
 				prep_stm.executeUpdate();
 				rs.close();
+			}
+			if (reg_ids.size() > 0) {
+				System.out.println("we have receivers");
+				Sender sender = new Sender(
+						"AIzaSyDLu3sgf1P5tQXEpFC-y-yR5O0kUuAun44");
+				Message message = new Message.Builder().addData("data",
+						"it is a data").build();
+				try {
+					MulticastResult result = sender.send(message, reg_ids, 1);
+					System.out.println("gcm sucess" + result.getSuccess());
+				} catch (IOException e) {
+
+					e.printStackTrace();
+				}
 			}
 
 		} catch (SQLException e) {
@@ -395,25 +421,25 @@ public class DBConnection {
 	 * 
 	 * @param messages
 	 *            {@link JSONArray} of messages received from client
-	 * @param userid
+	 * @param sender
 	 *            {@link String} user_id like 'b-11-136'
 	 * @return {@link JSONArray} of message IDs received from client or null if
 	 *         exception occurs
 	 */
-	public JSONArray fillMessages(JSONArray messages, String userid) {
+	public JSONArray fillMessages(JSONArray messages, String sender) {
 		JSONArray msg_ids = new JSONArray();
 		try {
 			int len = messages.length();
 			if (len > 0) {
-				int sender_pk = getPKOfUser(userid);
+				int sender_pk = getPKOfUser(sender);
 				StringBuilder query = new StringBuilder(
 						"insert into messages(sender,text,time,receiver) values");
 				String new_entry = "(?,?,?,?)";
 				for (int i = 0; i < len; i++) {
 					query.append(new_entry);
-					if (i < len - 1)
-						query.append(DbConstants.COMMA);
+					query.append(DbConstants.COMMA);
 				}
+				query.deleteCharAt(query.length() - 1);
 
 				PreparedStatement stm = conn.prepareStatement(query.toString());
 				JSONObject message;
@@ -433,6 +459,7 @@ public class DBConnection {
 				stm.execute();
 				// inserted messages with pending state default value set in db
 				// :P
+				// send notif to gcm server
 			}
 
 		} catch (Exception e) {
@@ -1385,4 +1412,24 @@ public class DBConnection {
 		}
 		return result;
 	}
+
+	/**
+	 * user is authenticated just update the cell
+	 * 
+	 * @param d_uname
+	 * @param regid
+	 * @return
+	 */
+	public boolean updateRegId(String d_uname, String regid) {
+		try {
+			Statement stm = conn.createStatement();
+			stm.executeUpdate("update login set reg_id='" + regid
+					+ "' where user_id='" + d_uname + "'");
+			return true;
+		} catch (Exception e) {
+			Utility.debug(e);
+			return false;
+		}
+	}
+
 }

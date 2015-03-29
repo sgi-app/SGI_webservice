@@ -1,7 +1,7 @@
 package com.sgi.util;
 
 public class StudentFull extends Student {
-	String u_roll_no;
+	public String u_roll_no;
 
 	public StudentFull(String f_name_, String l_name_, String user_id_,
 			String picUrl_, int year_, String section_, String u_roll) {
