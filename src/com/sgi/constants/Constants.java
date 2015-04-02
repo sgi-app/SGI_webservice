@@ -115,7 +115,7 @@ public interface Constants {
 			String UPLOADING_MESSAGES = "UploadingMessages";
 			String MSG_ACK = "MessageAcknoledgement";
 			String NOT_ACK = "NotificationAcknoledgement";
-			String ACKS = "MessageAndNotificationAcknoledgement";
+			String ACKS = "MsgAndNotiAck";
 			String UPLOADING_NOTIFICATIONS = "UploadingNotifications";
 		}
 

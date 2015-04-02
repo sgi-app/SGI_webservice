@@ -3,6 +3,7 @@ package com.sgi.webservice;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,9 +25,10 @@ import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
 import com.sgi.util.Notification;
 import com.sgi.util.Utility;
-import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.core.util.Base64;
-import com.sun.jersey.multipart.FormDataParam;
+import com.sun.jersey.multipart.BodyPart;
+import com.sun.jersey.multipart.BodyPartEntity;
+import com.sun.jersey.multipart.MultiPart;
 
 @Path("/query")
 public class QueryTypeHandler {
@@ -350,35 +352,49 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getFile(
-			@FormDataParam(Constants.QueryParameters.FILE) InputStream inputStream,
-			@FormDataParam(Constants.QueryParameters.FILE) FormDataContentDisposition fileDetail) {
+	public String getFile(MultiPart multiPart) {
+		// @FormDataParam(Constants.QueryParameters.FILE) InputStream
+		// inputStream,
+		// @FormDataParam(Constants.QueryParameters.FILE)
+		// FormDataContentDisposition fileDetail) {
+
 		System.out.println("got ya");
 		JSONObject jobj = new JSONObject();
-		String file_name = fileDetail.getFileName();
+		InputStream is;
 
+		OutputStream os;
+		byte[] buff = new byte[1024];
 		try {
-			OutputStream out = null;
+			int i = 0;
 			int read = 0;
-			byte[] bytes = new byte[1024];
+			for (BodyPart bp : multiPart.getBodyParts()) {
+				is = ((BodyPartEntity) bp.getEntity()).getInputStream();
 
-			out = new FileOutputStream(new File("D://new/" + file_name));
-
-			while ((read = inputStream.read(bytes)) != -1) {
-				out.write(bytes, 0, read);
+				os = new FileOutputStream("D://new/"+i+"a.txt");
+				while ((read = is.read(buff)) != -1) {
+					os.write(buff, 0, read);
+				}
+				os.close();
+				is.close();
+				i++;
 			}
-			out.flush();
-			out.close();
-			jobj.put("status", "true");
-		} catch (JSONException | IOException e) {
-			e.printStackTrace();
-			try {
-				jobj.put("status", "false");
-			} catch (JSONException ee) {
-				ee.printStackTrace();
-			}
+		} catch (Exception e) {
+			Utility.debug(e);
 		}
+		/*
+		 * String file_name = fileDetail.getFileName();
+		 * 
+		 * try { OutputStream out = null; int read = 0; byte[] bytes = new
+		 * byte[1024];
+		 * 
+		 * out = new FileOutputStream(new File("D://new/" + file_name));
+		 * 
+		 * while ((read = inputStream.read(bytes)) != -1) { out.write(bytes, 0,
+		 * read); } out.flush(); out.close(); jobj.put("status", "true"); }
+		 * catch (JSONException | IOException e) { e.printStackTrace(); try {
+		 * jobj.put("status", "false"); } catch (JSONException ee) {
+		 * ee.printStackTrace(); } }
+		 */
 		return jobj.toString();
 	}
-
 }

@@ -12,6 +12,8 @@ import com.sgi.dao.DBConnection;
 import com.sun.jersey.core.util.Base64;
 
 public class Utility {
+	public static String sender_id;
+
 	public static JSONObject ConstructJSON(DBConnection db, String tagr,
 			boolean statusr, String user_id, Boolean is_faculty, String msg) {
 		JSONObject obj = new JSONObject();
@@ -126,5 +128,16 @@ public class Utility {
 
 	public static void debug(Exception e) {
 		e.printStackTrace();
+	}
+
+	public static String getSenderKey() {
+		return "AIzaSyDLu3sgf1P5tQXEpFC-y-yR5O0kUuAun44";
+		/*
+		 * if (sender_id == null) { try { BufferedReader br = new
+		 * BufferedReader(new InputStreamReader( Application.class
+		 * .getResourceAsStream("/WEB-INF/api.key"))); sender_id =
+		 * br.readLine(); br.close(); return sender_id; } catch (Exception e) {
+		 * Utility.debug(e); return null; } } else { return sender_id; }
+		 */
 	}
 }

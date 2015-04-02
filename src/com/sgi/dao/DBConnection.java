@@ -16,6 +16,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import com.google.android.gcm.server.Message;
 import com.google.android.gcm.server.MulticastResult;
+import com.google.android.gcm.server.Result;
 import com.google.android.gcm.server.Sender;
 import com.sgi.constants.Constants;
 import com.sgi.util.Faculty;
@@ -112,6 +113,22 @@ public class DBConnection {
 			pk_of_user = -1;
 		}
 		return pk_of_user;
+	}
+
+	private String getRegIdOfUser(String user_id) {
+		String reg_id = null;
+		try {
+			String query = "select reg_id from login where user_id='" + user_id
+					+ "'";
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery(query);
+			if (rs.next()) {
+				reg_id = rs.getString(1);
+			}
+		} catch (Exception e) {
+			Utility.debug(e);
+		}
+		return reg_id;
 	}
 
 	/**
@@ -344,13 +361,22 @@ public class DBConnection {
 			}
 			if (reg_ids.size() > 0) {
 				System.out.println("we have receivers");
-				Sender sender = new Sender(
-						"AIzaSyDLu3sgf1P5tQXEpFC-y-yR5O0kUuAun44");
-				Message message = new Message.Builder().addData("data",
-						"it is a data").build();
+				Sender sender = new Sender(Utility.getSenderKey());
+				Message message = new Message.Builder().collapseKey(
+						"Notifications").build();
 				try {
-					MulticastResult result = sender.send(message, reg_ids, 1);
-					System.out.println("gcm sucess" + result.getSuccess());
+					MulticastResult result = sender.send(message, reg_ids, 3);
+					if (result.getCanonicalIds() > 0) {
+						// update reg_ids
+						for (Result msg_rs : result.getResults()) {
+							String new_reg_id = msg_rs
+									.getCanonicalRegistrationId();
+							if (new_reg_id != null) {
+								// update login set reg_id=new_reg_id where
+								System.out.println("got canonical ids update them now");
+							}
+						}
+					}
 				} catch (IOException e) {
 
 					e.printStackTrace();
@@ -428,6 +454,7 @@ public class DBConnection {
 	 */
 	public JSONArray fillMessages(JSONArray messages, String sender) {
 		JSONArray msg_ids = new JSONArray();
+		ArrayList<String> reg_ids = new ArrayList<String>();
 		try {
 			int len = messages.length();
 			if (len > 0) {
@@ -444,6 +471,7 @@ public class DBConnection {
 				PreparedStatement stm = conn.prepareStatement(query.toString());
 				JSONObject message;
 				int j = 1;
+				String reg_id;
 				for (int i = 0; i < len; i++) {
 					message = messages.getJSONObject(i);
 					stm.setInt(j, sender_pk); // sender
@@ -453,19 +481,42 @@ public class DBConnection {
 							message.getLong(Constants.JSONKEYS.MESSAGES.TIME));
 					stm.setInt(j + 3, getPKOfUser(message
 							.getString(Constants.JSONKEYS.MESSAGES.RECEIVER)));
+					reg_id = getRegIdOfUser(message
+							.getString(Constants.JSONKEYS.MESSAGES.RECEIVER));
+
+					// for notifications gcm
+					// check to ensure we have unique ids
+					if (reg_id != null && !reg_ids.contains(reg_id))
+						reg_ids.add(reg_id);
+
 					j += 4;
+					// for ack
 					msg_ids.put(message.getInt(Constants.JSONKEYS.MESSAGES.ID));
 				}
 				stm.execute();
 				// inserted messages with pending state default value set in db
 				// :P
-				// send notif to gcm server
+				Sender gcm_sender = new Sender(Utility.getSenderKey());
+				Message gcm_message = new Message.Builder().collapseKey(
+						"messages").build();
+				try {
+					MulticastResult result = gcm_sender.send(gcm_message,
+							reg_ids, 3);
+					if (result.getCanonicalIds() > 0) {
+						// update reg_ids
+						System.out.println("got canonical ids update them now");
+					}
+				} catch (Exception e) {
+					Utility.debug(e);
+				}
 			}
 
 		} catch (Exception e) {
 			Utility.debug(e);
 		}
 		// System.out.println("message acks" + msg_ids);
+		// send gcm the list of receiver(s)
+
 		return msg_ids;
 	}
 
@@ -1219,9 +1270,9 @@ public class DBConnection {
 		}
 	}
 
-	public String getuserInfo(String u_id, boolean is_std) {
+	public String getuserInfo(String u_id, boolean is_faculty) {
 		String query;
-		if (is_std) {
+		if (!is_faculty) {
 			query = DbConstants.SELECT + DbStructure.STUDENTS.COLUMN_U_ROLL_NO
 					+ DbConstants.FROM + DbStructure.STUDENTS.TABLE_NAME
 					+ DbConstants.JOIN + DbStructure.LOGIN.TABLE_NAME
@@ -1261,7 +1312,7 @@ public class DBConnection {
 			ResultSet rs = stm.executeQuery(query);
 			obj = new JSONObject();
 			if (rs.next()) {
-				if (is_std) {
+				if (!is_faculty) {
 					obj.put(Constants.JSONKEYS.ROLL_NO, rs.getString(1));
 				} else {
 					obj.put(Constants.JSONKEYS.STATE, rs.getString(1));
