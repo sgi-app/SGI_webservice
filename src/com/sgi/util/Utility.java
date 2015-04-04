@@ -3,6 +3,8 @@ package com.sgi.util;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -14,6 +16,14 @@ import com.sun.jersey.core.util.Base64;
 public class Utility {
 	public static String sender_id;
 
+	private static String DEBUG_FILE = "FILE: ";
+	private static String DEBUG_METHOD = " METHOD: ";
+	private static String DEBUG_LINE = " LINE: ";
+	private static String DEBUG_NEW_LINE = "\n";
+	private static String DEBUG_ERROR = "ERROR: ";
+
+	private static Log log = LogFactory.getLog(Utility.class);
+
 	public static JSONObject ConstructJSON(DBConnection db, String tagr,
 			boolean statusr, String user_id, Boolean is_faculty, String msg) {
 		JSONObject obj = new JSONObject();
@@ -22,7 +32,7 @@ public class Utility {
 			obj.put(Constants.JSONKEYS.STATUS, statusr);
 			if (statusr) {
 				User user = db.getPersonalInfo(user_id, is_faculty);
-				// System.out.println("in status true");
+				// LOG("in status true");
 
 				// System.out.print(user);
 
@@ -55,8 +65,13 @@ public class Utility {
 		} catch (Exception e) {
 			return ConstructJSON(db, tagr, false, null, null, e.getMessage());
 		}
-		// System.out.println(obj.toString());
+		// LOG(obj.toString());
 		return obj;
+	}
+
+	public static void LOG(String str) {
+		log.info(str);
+		// System.out.println(str);
 	}
 
 	public static JSONObject ConstructJSON(DBConnection db, String tagr,
@@ -97,7 +112,7 @@ public class Utility {
 				obja.put(tmpobj);
 			}
 		}
-		// System.out.println(obja.toString());
+		// LOG(obja.toString());
 		return obja.toString();
 	}
 
@@ -127,7 +142,14 @@ public class Utility {
 	}
 
 	public static void debug(Exception e) {
-		e.printStackTrace();
+		StringBuilder strb = new StringBuilder(DEBUG_ERROR + e.getMessage()
+				+ DEBUG_NEW_LINE + e.getLocalizedMessage() + DEBUG_NEW_LINE);
+
+		for (StackTraceElement se : e.getStackTrace())
+			strb.append(DEBUG_FILE + se.getFileName() + DEBUG_LINE
+					+ se.getLineNumber() + DEBUG_METHOD + se.getMethodName()
+					+ DEBUG_NEW_LINE);
+		log.error(strb.toString());
 	}
 
 	public static String getSenderKey() {

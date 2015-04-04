@@ -27,10 +27,6 @@ import com.sgi.util.Utility;
 public class Login {
 	public static long counter = 0;
 
-	private void print(String str) {
-		System.out.println(str);
-	}
-
 	@POST
 	@Path("/dologin")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -53,7 +49,7 @@ public class Login {
 
 			input = new JSONObject(strb.toString());
 
-			print(input.toString());
+			Utility.LOG(input.toString());
 
 			d_uname = Utility.decode(input
 					.getString(Constants.JSONKEYS.USER_ID));
@@ -79,9 +75,9 @@ public class Login {
 				// initial data
 
 				User user = db.getPersonalInfo(d_uname, is_faculty);
-				// System.out.println("in status true");
+				// Utility.LOG("in status true");
 
-				// System.out.print(user);
+				// Utility.LOG(user);
 				JSONObject obj = new JSONObject();
 				obj.put(Constants.JSONKEYS.FIRST_NAME, user.f_name);
 				obj.put(Constants.JSONKEYS.LAST_NAME, user.l_name);
@@ -110,7 +106,7 @@ public class Login {
 
 				// update device regid
 				db.updateRegId(d_uname, regid);
-				System.out.println(d_uname + " logged in\n"+response.toString());
+				Utility.LOG(d_uname + " logged in\n"+response.toString());
 
 			} else {
 
@@ -120,7 +116,7 @@ public class Login {
 				response.put(Constants.JSONKEYS.ERROR,
 						"Credentials not matched");
 
-				System.out.println(d_uname
+				Utility.LOG(d_uname
 						+ " tried to login but wrong details");
 			}
 		} catch (Exception e) {
