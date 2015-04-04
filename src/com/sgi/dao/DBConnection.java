@@ -143,11 +143,14 @@ public class DBConnection {
 				PreparedStatement stm = conn.prepareStatement(query.toString());
 				int j = 1;
 				JSONObject notification;
+
 				MapperEntry mapper_e = null;
 				ArrayList<MapperEntry> mapper_list = new ArrayList<MapperEntry>();
 				int target_id;
+
 				for (int i = 0; i < len; i++) {
-					notification = notifications.getJSONObject(i);				
+					notification = notifications.getJSONObject(i);
+					// For user mapper
 					mapper_e = new MapperEntry(
 							notification
 									.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY),
@@ -161,6 +164,7 @@ public class DBConnection {
 									.getString(Constants.JSONKEYS.NOTIFICATIONS.SECTION));
 					mapper_list.add(mapper_e);
 					target_id = createMapperEntry(mapper_e);
+					// Insert notification into db one by one
 					if (target_id != -1) {
 						stm.setInt(j, sender_pk);
 						stm.setString(
@@ -180,6 +184,9 @@ public class DBConnection {
 										.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY));
 						noti_ids.put(notification
 								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
+						// fill_files(notification
+						// .getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS),
+						// sender_pk);
 
 					} else {
 						// if here there will be a problem as statement will be
@@ -207,6 +214,70 @@ public class DBConnection {
 		return noti_ids;
 	}
 
+	public ResultSet fill_files(JSONArray attachments, String user_id) {
+		int sender_pk = getPKOfUser(user_id);
+		System.out.println("" + user_id + " pk :" + sender_pk);
+		StringBuilder query = new StringBuilder(
+				"insert into files(url,owner,time) values");
+		String str = "(?,?,?)";
+		String file_name = null;
+		String[] temp = new String[2];
+		JSONObject attachment;
+		int len_attachments;
+		ResultSet rs = null;
+		int file_count = 0;
+		Statement stmt;
+		String query_count = "select count(*) from files";
+		try {
+			stmt = conn.createStatement();
+			rs = stmt.executeQuery(query_count);
+			rs.next();
+			file_count = rs.getInt(1);			
+			rs=null;
+			len_attachments = attachments.length();
+			System.out.println("file count : " + file_count+"len_attacdkjd: "+len_attachments);
+			if (len_attachments > 0) {
+				for (int a = 0; a < len_attachments; a++) {
+					query.append(str);
+					query.append(DbConstants.COMMA);
+				}
+				query.deleteCharAt(query.length() - 1);
+				PreparedStatement stm = conn.prepareStatement(query.toString());
+				int j = 1;
+				for (int i = 0; i < len_attachments; i++) {
+					attachment = attachments.getJSONObject(i);
+			//		temp = attachment.getString(Constants.JSONKEYS.FILES.NAME)
+				//			.split("\\.");
+					// Eg: filename_id.extension
+					file_name = Utility.setFileName(attachment.getString(Constants.JSONKEYS.FILES.NAME), file_count+1);
+					stm.setString(j, "D://new/" + file_name);
+					stm.setInt(j + 1, sender_pk);
+					stm.setLong(j + 2, attachment
+							.getLong(Constants.JSONKEYS.NOTIFICATIONS.TIME));
+					j += 3;
+					file_count++;
+				}
+				System.out.println(stm.toString());
+				//stm.executeUpdate();
+				if (stm.executeUpdate() > 0) {
+					rs = stm.getGeneratedKeys();
+
+					/*
+					 * int i = 0; /= while (rs.next()) {
+					 * fill_file_notification_map(); i++;
+					 * 
+					 * }
+					 */
+				}
+
+			}
+		} catch (Exception e) {
+			Utility.debug(e);
+
+		}
+		return rs;
+	}
+
 	/**
 	 * Fill the user_notification_map table with the target users of the
 	 * notification
@@ -230,8 +301,8 @@ public class DBConnection {
 				"insert into user_notification_map(notification_id,user_id,is_faculty) values");
 		String new_values = " (?,?,?)";
 		try {
-			
-			//adding students
+
+			// adding students
 			if (mapper_e.FOR_FACULTY == Constants.FOR_FACULTY.NO) {
 				if (mapper_e.COURSE.equalsIgnoreCase("all")) {
 					query_temp = " select id,is_faculty from login where is_faculty='N'";

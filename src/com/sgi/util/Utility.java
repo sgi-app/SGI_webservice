@@ -3,6 +3,8 @@ package com.sgi.util;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 
+import javax.ws.rs.core.MultivaluedMap;
+
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -10,6 +12,7 @@ import org.codehaus.jettison.json.JSONObject;
 import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
 import com.sun.jersey.core.util.Base64;
+import com.sun.jersey.multipart.BodyPart;
 
 public class Utility {
 	public static String ConstructJSON(DBConnection db, String tagr,
@@ -127,4 +130,32 @@ public class Utility {
 	public static void debug(Exception e) {
 		e.printStackTrace();
 	}
+
+	public static String getFileName(BodyPart bp) {
+		String filename = "";
+		MultivaluedMap<String, String> contentDisp = bp.getHeaders();
+		System.out.println("content-disposition header= "
+				+ contentDisp.get("Content-Disposition"));
+		String[] tokens = contentDisp.get("Content-Disposition").get(0)
+				.split(";");
+		for (String token : tokens) {
+			if (token.trim().startsWith("filename")) {
+				filename = token.substring(token.indexOf("=") + 2,
+						token.length() - 1);
+				break;
+			}
+		}
+		return filename;
+	}
+	public static String setFileName(String fileName,int index){		
+		int lastindexof = fileName.lastIndexOf(".");
+		String extenstion=fileName.substring(lastindexof); 
+		String name=fileName.substring(0, lastindexof);
+		fileName = name+"_"+index+extenstion;
+		System.out.println("got filename=" + fileName+ "\n" +name+ "extend:"+extenstion );
+		return fileName;
+	}
+	
+	
+
 }

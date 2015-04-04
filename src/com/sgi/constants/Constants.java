@@ -23,7 +23,8 @@ public interface Constants {
 		String MSGIDS = "message_ids";
 		String MESSAGES = "messages";
 		String FILE_NAME = "file_name";
-
+		String FILE_ID = "file_id";
+		
 		public interface Notification {
 			String SUBJECT = "subject";
 			String BODY = "body";
@@ -134,6 +135,12 @@ public interface Constants {
 			String SECTION = "Section";
 			String SENDER = "Sender";
 			String ACK = "Noti_ack";
+			String ATTACHMENTS = "attachments";
+		}
+		public interface FILES{
+			String NAME = "name";
+			String ID = "Id";
+			
 		}
 	}
 

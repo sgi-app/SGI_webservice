@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.sql.ResultSet;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -15,7 +17,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -25,10 +26,10 @@ import com.sgi.constants.Constants;
 import com.sgi.dao.DBConnection;
 import com.sgi.util.Notification;
 import com.sgi.util.Utility;
-import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.core.util.Base64;
-import com.sun.jersey.multipart.FormDataMultiPart;
-import com.sun.jersey.multipart.FormDataParam;
+import com.sun.jersey.multipart.BodyPart;
+import com.sun.jersey.multipart.BodyPartEntity;
+import com.sun.jersey.multipart.MultiPart;
 
 @Path("/query")
 public class QueryTypeHandler {
@@ -352,48 +353,95 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getFile(@FormDataParam("file") InputStream inputStream,
-			@FormDataParam("file") FormDataContentDisposition fileDetail) {
-		System.out.println("got ya");
+	public String getFile(MultiPart multipart) throws IOException
+	// @FormDataParam("file") FormDataContentDisposition fileDetail,
+	// @QueryParam(Constants.QueryParameters.USERNAME) String userid,
+	// @QueryParam(Constants.QueryParameters.TOKEN) String token,
+	// @QueryParam(Constants.QueryParameters.FILE_ID) JSONArray attachments)
+	{
+		DBConnection db = new DBConnection();
 		JSONObject jobj = new JSONObject();
-		String file_name = fileDetail.getFileName();
-
-		try {
-			OutputStream out = null;
-			int read = 0;
+		JSONArray jsonarr = new JSONArray();
+		OutputStream out = null;
+		BufferedReader br = null;
+		String fileName = null;
+		String str = null;
+		StringBuilder strb = null;
+		BodyPart bp = null;
+		InputStream inputStream = null;
+		try {		
+			System.out.println("got ya");
+			// ResultSet rs = db.fill_files(attachments, userid);
+			List<BodyPart> bpl = multipart.getBodyParts();
+			int files = bpl.size();
 			byte[] bytes = new byte[1024];
-
-			out = new FileOutputStream(new File("D://new/" + file_name));
-
-			while ((read = inputStream.read(bytes)) != -1) {
-				out.write(bytes, 0, read);
-			}
-			out.flush();
-			out.close();
-			jobj.put("status", "true");
-		} catch (JSONException | IOException e) {
-			e.printStackTrace();
+			bp = bpl.get(0);
+			strb = new StringBuilder();
+			inputStream = ((BodyPartEntity) bp.getEntity()).getInputStream();
+			br = new BufferedReader(new InputStreamReader(inputStream));
 			try {
-				jobj.put("status", "false");
-			} catch (JSONException ee) {
-				ee.printStackTrace();
+				while ((str = br.readLine()) != null) {
+					strb.append(str);
+				}
+			} catch (IllegalStateException e) {
+				System.out.println("Reached end of stream");
+				// Utility.debug(e);
+			} finally {
+				br.close();
 			}
+			String userid = new String(strb.toString());
+			System.out.println(userid.toString());
+			bp = bpl.get(1);
+			strb = new StringBuilder();
+			inputStream = ((BodyPartEntity) bp.getEntity()).getInputStream();
+			br = new BufferedReader(new InputStreamReader(inputStream));
+			try {
+				while ((str = br.readLine()) != null) {
+					strb.append(str);
+				}
+			} catch (IllegalStateException e) {
+				System.out.println("Reached end of stream");
+				// Utility.debug(e);
+			} finally {
+				br.close();
+			}
+			JSONArray ahgsfdjs = new JSONArray(strb.toString());
+			System.out.println(ahgsfdjs.toString());
+			ResultSet rs = db.fill_files(ahgsfdjs, userid);
+	//		while (rs.next()) {
+	//			System.out.println(rs.getInt(1));
+	//		}
+			for (int i = 2; i < files; i++) {
+				rs.next();
+				bp = bpl.get(i);
+				inputStream = ((BodyPartEntity) bp.getEntity()) 
+						.getInputStream();
+				// MediaType exten = bp.getHeaders()
+				// System.out.println(exten.toString());
+				fileName = Utility.getFileName(bp);				
+				fileName = Utility.setFileName(fileName,rs.getInt(1));
+				System.out.println("got filename=" + fileName);
+				// fileName = "_" + i + ".txt";
+				int read = 0;
+				out = new FileOutputStream(new File("D://new/" + fileName));
+				try {
+					while ((read = inputStream.read(bytes)) != -1) {
+						out.write(bytes, 0, read);
+					}
+				} catch (Exception e) {
+					Utility.debug(e);
+				}
+				out.flush();
+				out.close();
+				inputStream.close();
+			}
+			jobj.put(Constants.JSONKEYS.FILES.ID, jsonarr);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			br.close();
 		}
 		return jobj.toString();
 	}
-}
 
-/*
- * System.out.println("yo m called");
- * 
- * // InputStream inputStream = null; OutputStream outputStream = null; byte[]
- * bytes = new byte[1024]; int read = 0;
- * 
- * // BufferedReader br= new BufferedReader(new //
- * InputStreamReader(inputstream)); try { outputStream = new
- * FileOutputStream(new File("D:/new.doc")); while ((read =
- * inputstream.read(bytes)) != -1) { outputStream.write(bytes, 0, read); } }
- * catch (IOException e) { // TODO Auto-generated catch block
- * e.printStackTrace(); } try { inputstream.close(); outputStream.close(); }
- * catch (IOException e) { e.printStackTrace(); }
- */
+}
