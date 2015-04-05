@@ -35,7 +35,7 @@ import com.sgi.util.Utility;
 import com.sgi.webservice.Login;
 
 public class DBConnection {
-	private static final boolean local=false;
+	private static final boolean local=true;
 	private Connection conn;
 	private String DB_CLASS = "com.mysql.jdbc.Driver";
 	private String DB_NAME = local?"sgi_app":"sgitomcat";

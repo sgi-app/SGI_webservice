@@ -308,8 +308,7 @@ public class QueryTypeHandler {
 				} else {
 					// to avoid null error later in
 					data = new JSONObject();
-					System.out
-							.println("sync no data only credentials received");
+					Utility.LOG("sync no data only credentials received");
 				}
 
 				// get data from db for this user
