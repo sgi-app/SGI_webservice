@@ -131,6 +131,12 @@ public class Utility {
 		e.printStackTrace();
 	}
 
+	/**
+	 * get file name from the header of the bodypart
+	 * @param bp
+	 * @return String filename extracted from header 
+	 */
+	
 	public static String getFileName(BodyPart bp) {
 		String filename = "";
 		MultivaluedMap<String, String> contentDisp = bp.getHeaders();
@@ -147,6 +153,15 @@ public class Utility {
 		}
 		return filename;
 	}
+	/**
+	 * sets the file name to be saved
+	 * concatenates index in the file name
+	 * index contains file id
+	 * @param fileName
+	 * @param index
+	 * @return string filename
+	 */
+	
 	public static String setFileName(String fileName,int index){		
 		int lastindexof = fileName.lastIndexOf(".");
 		String extenstion=fileName.substring(lastindexof); 

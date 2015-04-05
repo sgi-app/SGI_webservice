@@ -122,6 +122,7 @@ public class DBConnection {
 	 */
 	public JSONArray fillNotifications(JSONArray notifications, String userid) {
 		JSONArray noti_ids = new JSONArray();
+		
 		try {
 
 			int len = notifications.length();
@@ -129,25 +130,25 @@ public class DBConnection {
 				// get the pk of user with userid
 				// here user is sender
 				int sender_pk = getPKOfUser(userid);
-
 				StringBuilder query = new StringBuilder(
 						"insert into notification(faculty_id,text,time,title,target,for_faculty) values");
 				String str = "(?,?,?,?,?,?)";
-
 				for (int i = 0; i < len; i++) {
 					query.append(str);
 					query.append(DbConstants.COMMA);
 				}
 				query.deleteCharAt(query.length() - 1);
-
 				PreparedStatement stm = conn.prepareStatement(query.toString());
 				int j = 1;
 				JSONObject notification;
-
 				MapperEntry mapper_e = null;
 				ArrayList<MapperEntry> mapper_list = new ArrayList<MapperEntry>();
 				int target_id;
-
+				String query_countnoti = "select count(*) from notification";
+				Statement stm_countnoti = conn.createStatement();			
+				ResultSet rs_count = stm_countnoti.executeQuery(query_countnoti);
+				rs_count.next();
+				int count_noti = rs_count.getInt(1); 
 				for (int i = 0; i < len; i++) {
 					notification = notifications.getJSONObject(i);
 					// For user mapper
@@ -184,10 +185,11 @@ public class DBConnection {
 										.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY));
 						noti_ids.put(notification
 								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
+						fill_file_notification_map(count_noti+1,notification.getJSONObject(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS));
 						// fill_files(notification
 						// .getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS),
 						// sender_pk);
-
+						count_noti++;
 					} else {
 						// if here there will be a problem as statement will be
 						// containing more ? then the actual values
@@ -201,7 +203,7 @@ public class DBConnection {
 					int i = 0;
 					while (rs.next()) {
 						fill_user_notification_map(mapper_list.get(i),
-								rs.getInt(1), sender_pk);
+								rs.getInt(1), sender_pk);						
 						i++;
 
 					}
@@ -221,7 +223,6 @@ public class DBConnection {
 				"insert into files(url,owner,time) values");
 		String str = "(?,?,?)";
 		String file_name = null;
-		String[] temp = new String[2];
 		JSONObject attachment;
 		int len_attachments;
 		ResultSet rs = null;
@@ -246,9 +247,6 @@ public class DBConnection {
 				int j = 1;
 				for (int i = 0; i < len_attachments; i++) {
 					attachment = attachments.getJSONObject(i);
-			//		temp = attachment.getString(Constants.JSONKEYS.FILES.NAME)
-				//			.split("\\.");
-					// Eg: filename_id.extension
 					file_name = Utility.setFileName(attachment.getString(Constants.JSONKEYS.FILES.NAME), file_count+1);
 					stm.setString(j, "D://new/" + file_name);
 					stm.setInt(j + 1, sender_pk);
@@ -261,7 +259,6 @@ public class DBConnection {
 				//stm.executeUpdate();
 				if (stm.executeUpdate() > 0) {
 					rs = stm.getGeneratedKeys();
-
 					/*
 					 * int i = 0; /= while (rs.next()) {
 					 * fill_file_notification_map(); i++;
@@ -269,15 +266,43 @@ public class DBConnection {
 					 * }
 					 */
 				}
-
 			}
 		} catch (Exception e) {
 			Utility.debug(e);
-
 		}
 		return rs;
 	}
 
+	private void fill_file_notification_map(int notification_id, JSONObject attachments){
+		JSONArray attachment = new JSONArray();
+		ResultSet rs;
+		Statement stm;
+		PreparedStatement prep_stm;		
+		StringBuilder query = new StringBuilder("insert into file_notification_map(notification_id,file_id) values");
+		String new_values = "(?,?)";
+		int j = 1;
+		try{
+			attachment = attachments.getJSONArray(Constants.JSONKEYS.FILES.ID);
+			int len = attachment.length();
+			for (int i = 0; i < len; i++) {
+				query.append(new_values);
+				query.append(DbConstants.COMMA);
+			}
+			query.deleteCharAt(query.length() - 1);
+			prep_stm  = conn.prepareStatement(query.toString());
+			for(int i=0;i<len;i++){
+				prep_stm.setInt(j, notification_id);
+				prep_stm.setInt(j+1, attachment.getInt(i));
+				j+=2;
+			}
+			System.out.println(prep_stm.toString());
+			prep_stm.executeUpdate();
+		}catch(Exception e){
+			Utility.debug(e);
+		}
+	}
+	
+	
 	/**
 	 * Fill the user_notification_map table with the target users of the
 	 * notification
@@ -285,7 +310,6 @@ public class DBConnection {
 	 * @param mapper_e
 	 * @param notification_id
 	 */
-
 	private void fill_user_notification_map(MapperEntry mapper_e,
 			int notification_id, int sender_pk_id) {
 

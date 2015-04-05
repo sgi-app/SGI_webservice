@@ -370,8 +370,7 @@ public class QueryTypeHandler {
 		BodyPart bp = null;
 		InputStream inputStream = null;
 		try {		
-			System.out.println("got ya");
-			// ResultSet rs = db.fill_files(attachments, userid);
+			System.out.println("got ya");			
 			List<BodyPart> bpl = multipart.getBodyParts();
 			int files = bpl.size();
 			byte[] bytes = new byte[1024];
@@ -385,7 +384,6 @@ public class QueryTypeHandler {
 				}
 			} catch (IllegalStateException e) {
 				System.out.println("Reached end of stream");
-				// Utility.debug(e);
 			} finally {
 				br.close();
 			}
@@ -401,27 +399,20 @@ public class QueryTypeHandler {
 				}
 			} catch (IllegalStateException e) {
 				System.out.println("Reached end of stream");
-				// Utility.debug(e);
 			} finally {
 				br.close();
 			}
-			JSONArray ahgsfdjs = new JSONArray(strb.toString());
-			System.out.println(ahgsfdjs.toString());
-			ResultSet rs = db.fill_files(ahgsfdjs, userid);
-	//		while (rs.next()) {
-	//			System.out.println(rs.getInt(1));
-	//		}
+			JSONArray attachments = new JSONArray(strb.toString());
+			System.out.println(attachments.toString());
+			ResultSet rs = db.fill_files(attachments, userid);	
 			for (int i = 2; i < files; i++) {
 				rs.next();
 				bp = bpl.get(i);
 				inputStream = ((BodyPartEntity) bp.getEntity()) 
 						.getInputStream();
-				// MediaType exten = bp.getHeaders()
-				// System.out.println(exten.toString());
 				fileName = Utility.getFileName(bp);				
 				fileName = Utility.setFileName(fileName,rs.getInt(1));
-				System.out.println("got filename=" + fileName);
-				// fileName = "_" + i + ".txt";
+				System.out.println("got filename=" + fileName);				
 				int read = 0;
 				out = new FileOutputStream(new File("D://new/" + fileName));
 				try {
@@ -434,7 +425,8 @@ public class QueryTypeHandler {
 				out.flush();
 				out.close();
 				inputStream.close();
-			}
+				jsonarr.put(rs.getInt(1));
+			}						
 			jobj.put(Constants.JSONKEYS.FILES.ID, jsonarr);
 		} catch (Exception e) {
 			e.printStackTrace();
