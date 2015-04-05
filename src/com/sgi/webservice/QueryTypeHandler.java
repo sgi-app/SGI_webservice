@@ -33,14 +33,14 @@ import com.sun.jersey.multipart.MultiPart;
 
 @Path("/query")
 public class QueryTypeHandler {
-
+	
 	@GET
 	@Path("/type_resolver")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String typeResolver(
 			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
 			@QueryParam(Constants.QueryParameters.TOKEN) String token,
-			@QueryParam(Constants.QueryParameters.USER_TYPE) boolean student,
+			@QueryParam(Constants.QueryParameters.USER_TYPE) boolean is_faculty,
 			@QueryParam(Constants.QueryParameters.BRANCH) String branch,
 			@QueryParam(Constants.QueryParameters.YEAR) int year,
 			@QueryParam(Constants.QueryParameters.SECTION) String section,
@@ -48,19 +48,19 @@ public class QueryTypeHandler {
 		DBConnection db = new DBConnection();
 		String str = null;
 		if (db.authorizeUser(userid, token)) {
-			if (student) {
-				System.out.println("sending students list");
+			if (!is_faculty) {
+				Utility.LOG("sending students list");
 				str = db.send_student_list(year, branch, course, section);
 			} else {
-				System.out.println("sending Faculty list");
+				Utility.LOG("sending Faculty list");
 				str = db.send_faculty_list(branch, course);
 			}
 		} else {
 			// wrong user
-			System.out.println("Somting went wrong");
+			Utility.LOG("Somting went wrong");
 		}
 		db.closeConnection();
-		System.out.println(str + "\n\n");
+		Utility.LOG(str + "\n\n");
 		return str;
 	}
 
@@ -78,7 +78,7 @@ public class QueryTypeHandler {
 			str = db.getuserInfo(get_details_of_user_id, is_std);
 		}
 		db.closeConnection();
-		System.out.println("sending details\n" + str + "\n\n");
+		Utility.LOG("sending details\n" + str + "\n\n");
 		return str;// return an JsonObject Telling user is invalid
 	}
 
@@ -109,7 +109,7 @@ public class QueryTypeHandler {
 		} finally {
 			db.closeConnection();
 		}
-		System.out.println("sending details\n" + str + "\n\n");
+		Utility.LOG("sending details\n" + str + "\n\n");
 		return str;// return an JsonObject Telling user is invalid
 	}
 
@@ -135,7 +135,7 @@ public class QueryTypeHandler {
 				String d_userid = new String(Base64.decode(userid));
 				Notification noti = new Notification(subject, body, time,
 						d_userid, course, branch, section, year);
-				// System.out.println("new notification from " + d_userid);
+				// Utility.LOG("new notification from " + d_userid);
 				db.fillNotification(noti);
 				obj.put(Constants.JSONKEYS.STATUS, true);
 			} else {
@@ -165,7 +165,7 @@ public class QueryTypeHandler {
 			obj.put(Constants.JSONKEYS.TAG,
 					Constants.JSONKEYS.TAG_MSGS.UPLOADING_MESSAGES);
 			if (db.authorizeUser(userid, token)) {
-				// System.out.println(msgs + " ");
+				// Utility.LOG(msgs + " ");
 				// insert into db
 				if (db.fillMessage(msgs)) {
 					obj.put(Constants.JSONKEYS.STATUS, true);
@@ -182,7 +182,7 @@ public class QueryTypeHandler {
 		} finally {
 			db.closeConnection();
 		}
-		// System.out.println("new message ->" + obj.toString() + "\n\n");
+		// Utility.LOG("new message ->" + obj.toString() + "\n\n");
 		return obj.toString(); // return result sucess or failure
 	}
 
@@ -196,7 +196,7 @@ public class QueryTypeHandler {
 		DBConnection db = new DBConnection();
 		JSONArray messages = db.getMessagesFromDb(Utility.decode(userid));
 		db.closeConnection();
-		// System.out.println("sending messages\n" + messages.toString() +
+		// Utility.LOG("sending messages\n" + messages.toString() +
 		// "\n\n");
 		return messages.toString();
 	}
@@ -219,7 +219,7 @@ public class QueryTypeHandler {
 				while ((str = br.readLine()) != null) {
 					strb.append(str);
 				}
-				System.out.println("ack data received" + strb.toString());
+				Utility.LOG("ack data received" + strb.toString());
 				JSONObject ids = new JSONObject(strb.toString());
 				if (ids.has(Constants.JSONKEYS.MESSAGES.ACK)) {
 					db.updateMessageState(ids
@@ -244,7 +244,7 @@ public class QueryTypeHandler {
 		} finally {
 			db.closeConnection();
 		}
-		System.out.println("ack data sending" + result.toString() + "\n\n");
+		Utility.LOG("ack data sending" + result.toString() + "\n\n");
 		return result.toString();
 	}
 
@@ -288,7 +288,7 @@ public class QueryTypeHandler {
 				// have problem if there is no data
 				if (strb.toString().trim().length() > 0) {
 					data = new JSONObject(strb.toString());
-					System.out.println("sync data received" + data.toString());
+					Utility.LOG("sync data received" + data.toString());
 
 					// insert the data into database if there is data
 					if (data.has(Constants.JSONKEYS.MESSAGES.MESSAGES)) {
@@ -302,16 +302,16 @@ public class QueryTypeHandler {
 							notifications = data
 									.getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.NOTIFICATIONS);
 
-							if (notifications.length() > 0)
+							if (notifications.length() > 0) {
 								noti_ack_ids = db.fillNotifications(
 										notifications, d_userid);
+							}
 						}
 					}
 				} else {
 					// to avoid null error later in
 					data = new JSONObject();
-					System.out
-							.println("sync no data only credentials received");
+					Utility.LOG("sync no data only credentials received");
 				}
 
 				// get data from db for this user
@@ -334,7 +334,7 @@ public class QueryTypeHandler {
 							noti_ack_ids);
 
 			} else {
-				System.out.println("User not valid");
+				Utility.LOG("User not valid");
 			}
 		} catch (Exception e) {
 			Utility.debug(e);
@@ -342,9 +342,9 @@ public class QueryTypeHandler {
 			db.closeConnection();
 		}
 		if (new_data.length() > 0)
-			System.out.println("Sending this" + new_data.toString());
+			Utility.LOG("Sending this" + new_data.toString());
 		else
-			System.out.println("Sending nothing");
+			Utility.LOG("Sending nothing");
 
 		return new_data.toString();
 	}
@@ -353,6 +353,7 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
+
 	public String getFile(MultiPart multipart) throws IOException
 	// @FormDataParam("file") FormDataContentDisposition fileDetail,
 	// @QueryParam(Constants.QueryParameters.USERNAME) String userid,
@@ -433,6 +434,20 @@ public class QueryTypeHandler {
 		} finally {
 			br.close();
 		}
+		/*
+		 * String file_name = fileDetail.getFileName();
+		 * 
+		 * try { OutputStream out = null; int read = 0; byte[] bytes = new
+		 * byte[1024];
+		 * 
+		 * out = new FileOutputStream(new File("D://new/" + file_name));
+		 * 
+		 * while ((read = inputStream.read(bytes)) != -1) { out.write(bytes, 0,
+		 * read); } out.flush(); out.close(); jobj.put("status", "true"); }
+		 * catch (JSONException | IOException e) { e.printStackTrace(); try {
+		 * jobj.put("status", "false"); } catch (JSONException ee) {
+		 * ee.printStackTrace(); } }
+		 */
 		return jobj.toString();
 	}
 
