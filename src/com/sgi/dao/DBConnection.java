@@ -1,5 +1,6 @@
 package com.sgi.dao;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -40,7 +41,7 @@ public class DBConnection {
 	private String DB_CLASS = "com.mysql.jdbc.Driver";
 	private String DB_NAME = local?"sgi_app":"sgitomcat";
 	private String DB_USER = local?"root":"admindMLZJm1";
-	private String DB_PASSWORD = local?"1234":"QFeAtrnl8U7t";
+	private String DB_PASSWORD = local?"praveen":"QFeAtrnl8U7t";
 	private String DB_HOST = local?"localhost":"127.12.169.130";
 	private String DB_PORT = "3306";
 
@@ -217,10 +218,7 @@ public class DBConnection {
 										.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY));
 						noti_ids.put(notification
 								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
-						fill_file_notification_map(count_noti+1,notification.getJSONObject(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS));
-						// fill_files(notification
-						// .getJSONArray(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS),
-						// sender_pk);
+						fill_file_notification_map(count_noti+1,notification.getJSONObject(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS));					
 						count_noti++;
 					} else {
 						// if here there will be a problem as statement will be
@@ -237,7 +235,6 @@ public class DBConnection {
 						fill_user_notification_map(mapper_list.get(i),
 								rs.getInt(1), sender_pk);						
 						i++;
-
 					}
 				}
 				// insert notifications with state(PENDING) set by default in db
@@ -250,7 +247,6 @@ public class DBConnection {
 
 	public ResultSet fill_files(JSONArray attachments, String user_id) {
 		int sender_pk = getPKOfUser(user_id);
-		System.out.println("" + user_id + " pk :" + sender_pk);
 		StringBuilder query = new StringBuilder(
 				"insert into files(url,owner,time) values");
 		String str = "(?,?,?)";
@@ -268,7 +264,7 @@ public class DBConnection {
 			file_count = rs.getInt(1);			
 			rs=null;
 			len_attachments = attachments.length();
-			System.out.println("file count : " + file_count+"len_attacdkjd: "+len_attachments);
+			Utility.LOG("file count : " + file_count+"len_attachments: "+len_attachments);
 			if (len_attachments > 0) {
 				for (int a = 0; a < len_attachments; a++) {
 					query.append(str);
@@ -276,18 +272,19 @@ public class DBConnection {
 				}
 				query.deleteCharAt(query.length() - 1);
 				PreparedStatement stm = conn.prepareStatement(query.toString());
+				File destination = Utility.getDestination();
 				int j = 1;
 				for (int i = 0; i < len_attachments; i++) {
 					attachment = attachments.getJSONObject(i);
-					file_name = Utility.setFileName(attachment.getString(Constants.JSONKEYS.FILES.NAME), file_count+1);
-					stm.setString(j, "D://new/" + file_name);
+					file_name = Utility.setFileName(attachment.getString(Constants.JSONKEYS.FILES.NAME), file_count+1);					
+					stm.setString(j, destination + file_name);
 					stm.setInt(j + 1, sender_pk);
 					stm.setLong(j + 2, attachment
 							.getLong(Constants.JSONKEYS.NOTIFICATIONS.TIME));
 					j += 3;
 					file_count++;
 				}
-				System.out.println(stm.toString());
+				Utility.LOG(stm.toString());
 				//stm.executeUpdate();
 				if (stm.executeUpdate() > 0) {
 					rs = stm.getGeneratedKeys();
@@ -305,10 +302,13 @@ public class DBConnection {
 		return rs;
 	}
 
+	/**
+	 * file file notification map table for every notification with correspoding attachments
+	 * @param notification_id
+	 * @param attachments
+	 */
 	private void fill_file_notification_map(int notification_id, JSONObject attachments){
 		JSONArray attachment = new JSONArray();
-		ResultSet rs;
-		Statement stm;
 		PreparedStatement prep_stm;		
 		StringBuilder query = new StringBuilder("insert into file_notification_map(notification_id,file_id) values");
 		String new_values = "(?,?)";
@@ -327,7 +327,7 @@ public class DBConnection {
 				prep_stm.setInt(j+1, attachment.getInt(i));
 				j+=2;
 			}
-			System.out.println(prep_stm.toString());
+			Utility.LOG(prep_stm.toString());
 			prep_stm.executeUpdate();
 		}catch(Exception e){
 			Utility.debug(e);
@@ -394,7 +394,7 @@ public class DBConnection {
 				rs = stm.executeQuery(query_temp); // rs contains all the users
 				rs.last();
 				rs_size = rs.getRow();
-				System.out.print(rs_size + " students and ");
+				Utility.LOG(rs_size + " students and ");
 				if (rs_size > 0) {
 					rs.beforeFirst();
 

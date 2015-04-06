@@ -353,12 +353,7 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	public String getFile(MultiPart multipart) throws IOException
-	// @FormDataParam("file") FormDataContentDisposition fileDetail,
-	// @QueryParam(Constants.QueryParameters.USERNAME) String userid,
-	// @QueryParam(Constants.QueryParameters.TOKEN) String token,
-	// @QueryParam(Constants.QueryParameters.FILE_ID) JSONArray attachments)
 	{
 		DBConnection db = new DBConnection();
 		JSONObject jobj = new JSONObject();
@@ -370,8 +365,7 @@ public class QueryTypeHandler {
 		StringBuilder strb = null;
 		BodyPart bp = null;
 		InputStream inputStream = null;
-		try {		
-			System.out.println("got ya");			
+		try {					
 			List<BodyPart> bpl = multipart.getBodyParts();
 			int files = bpl.size();
 			byte[] bytes = new byte[1024];
@@ -384,12 +378,12 @@ public class QueryTypeHandler {
 					strb.append(str);
 				}
 			} catch (IllegalStateException e) {
-				System.out.println("Reached end of stream");
+				Utility.LOG("Reached end of stream");
 			} finally {
 				br.close();
 			}
 			String userid = new String(strb.toString());
-			System.out.println(userid.toString());
+			Utility.LOG(userid.toString());
 			bp = bpl.get(1);
 			strb = new StringBuilder();
 			inputStream = ((BodyPartEntity) bp.getEntity()).getInputStream();
@@ -399,12 +393,12 @@ public class QueryTypeHandler {
 					strb.append(str);
 				}
 			} catch (IllegalStateException e) {
-				System.out.println("Reached end of stream");
+				Utility.LOG("Reached end of stream");
 			} finally {
 				br.close();
 			}
 			JSONArray attachments = new JSONArray(strb.toString());
-			System.out.println(attachments.toString());
+			Utility.LOG(attachments.toString());
 			ResultSet rs = db.fill_files(attachments, userid);	
 			for (int i = 2; i < files; i++) {
 				rs.next();
@@ -412,10 +406,14 @@ public class QueryTypeHandler {
 				inputStream = ((BodyPartEntity) bp.getEntity()) 
 						.getInputStream();
 				fileName = Utility.getFileName(bp);				
-				fileName = Utility.setFileName(fileName,rs.getInt(1));
-				System.out.println("got filename=" + fileName);				
-				int read = 0;
-				out = new FileOutputStream(new File("D://new/" + fileName));
+				fileName = Utility.setFileName(fileName,rs.getInt(1));				
+				int read = 0;				
+				
+				File dir = Utility.getDestination();												
+				if(!dir.exists()){
+					dir.mkdirs();
+				}
+				out = new FileOutputStream(new File(dir +"/"+ fileName));
 				try {
 					while ((read = inputStream.read(bytes)) != -1) {
 						out.write(bytes, 0, read);
@@ -434,20 +432,6 @@ public class QueryTypeHandler {
 		} finally {
 			br.close();
 		}
-		/*
-		 * String file_name = fileDetail.getFileName();
-		 * 
-		 * try { OutputStream out = null; int read = 0; byte[] bytes = new
-		 * byte[1024];
-		 * 
-		 * out = new FileOutputStream(new File("D://new/" + file_name));
-		 * 
-		 * while ((read = inputStream.read(bytes)) != -1) { out.write(bytes, 0,
-		 * read); } out.flush(); out.close(); jobj.put("status", "true"); }
-		 * catch (JSONException | IOException e) { e.printStackTrace(); try {
-		 * jobj.put("status", "false"); } catch (JSONException ee) {
-		 * ee.printStackTrace(); } }
-		 */
 		return jobj.toString();
 	}
 

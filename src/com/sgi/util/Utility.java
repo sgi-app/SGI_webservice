@@ -1,10 +1,14 @@
 package com.sgi.util;
 
+import java.io.File;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 
 
+
+
 import javax.ws.rs.core.MultivaluedMap;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jettison.json.JSONArray;
@@ -175,8 +179,6 @@ public class Utility {
 	public static String getFileName(BodyPart bp) {
 		String filename = "";
 		MultivaluedMap<String, String> contentDisp = bp.getHeaders();
-		System.out.println("content-disposition header= "
-				+ contentDisp.get("Content-Disposition"));
 		String[] tokens = contentDisp.get("Content-Disposition").get(0)
 				.split(";");
 		for (String token : tokens) {
@@ -197,15 +199,20 @@ public class Utility {
 	 * @return string filename
 	 */
 	
-	public static String setFileName(String fileName,int index){		
+	public static String setFileName(String fileName,int index) {		
 		int lastindexof = fileName.lastIndexOf(".");
 		String extenstion=fileName.substring(lastindexof); 
 		String name=fileName.substring(0, lastindexof);
 		fileName = name+"_"+index+extenstion;
-		System.out.println("got filename=" + fileName+ "\n" +name+ "extend:"+extenstion );
+		Utility.LOG("got filename=" + fileName+ "\n" +name+ "extend:"+extenstion );
 		return fileName;
 	}
 	
+	public static File getDestination() {
+		File[] roots = File.listRoots();
+		File dir = new File(roots[0], "sgi_app/Files");												
+		return dir;
+	}
 	
 
 }
