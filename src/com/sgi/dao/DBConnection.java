@@ -277,7 +277,7 @@ public class DBConnection {
 				for (int i = 0; i < len_attachments; i++) {
 					attachment = attachments.getJSONObject(i);
 					file_name = Utility.setFileName(attachment.getString(Constants.JSONKEYS.FILES.NAME), file_count+1);					
-					stm.setString(j, destination + file_name);
+					stm.setString(j, destination +"\\" + file_name);
 					stm.setInt(j + 1, sender_pk);
 					stm.setLong(j + 2, attachment
 							.getLong(Constants.JSONKEYS.NOTIFICATIONS.TIME));
