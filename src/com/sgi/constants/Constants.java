@@ -149,7 +149,8 @@ public interface Constants {
 		public interface FILES{
 			String NAME = "name";
 			String ID = "Id";
-			
+			String URL = "url";	
+			String SIZE = "size";
 		}
 	}
 

@@ -413,11 +413,13 @@ public class QueryTypeHandler {
 				if(!dir.exists()){
 					dir.mkdirs();
 				}
-				out = new FileOutputStream(new File(dir +"/"+ fileName));
+				File file=new File(dir +"/"+ fileName);
+				out = new FileOutputStream(file);
 				try {
 					while ((read = inputStream.read(bytes)) != -1) {
 						out.write(bytes, 0, read);
 					}
+					System.out.println(file.length());
 				} catch (Exception e) {
 					Utility.debug(e);
 				}

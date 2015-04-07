@@ -179,6 +179,7 @@ public class Utility {
 	public static String getFileName(BodyPart bp) {
 		String filename = "";
 		MultivaluedMap<String, String> contentDisp = bp.getHeaders();
+		System.out.println(contentDisp);
 		String[] tokens = contentDisp.get("Content-Disposition").get(0)
 				.split(";");
 		for (String token : tokens) {

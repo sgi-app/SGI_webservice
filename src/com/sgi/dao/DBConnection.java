@@ -248,8 +248,8 @@ public class DBConnection {
 	public ResultSet fill_files(JSONArray attachments, String user_id) {
 		int sender_pk = getPKOfUser(user_id);
 		StringBuilder query = new StringBuilder(
-				"insert into files(url,owner,time) values");
-		String str = "(?,?,?)";
+				"insert into files(url,owner,time,size) values");
+		String str = "(?,?,?,?)";
 		String file_name = null;
 		JSONObject attachment;
 		int len_attachments;
@@ -281,7 +281,8 @@ public class DBConnection {
 					stm.setInt(j + 1, sender_pk);
 					stm.setLong(j + 2, attachment
 							.getLong(Constants.JSONKEYS.NOTIFICATIONS.TIME));
-					j += 3;
+					stm.setInt(j+3, attachment.getInt(Constants.JSONKEYS.FILES.SIZE));
+					j += 4;
 					file_count++;
 				}
 				Utility.LOG(stm.toString());
@@ -634,7 +635,10 @@ public class DBConnection {
 	 */
 	public JSONArray getNotificationsFromDb(String userid, boolean is_faculty) {
 		JSONArray notifications = new JSONArray();
-
+		JSONArray files = new JSONArray();
+		JSONObject file;
+		String query_files = null;
+		ResultSet rs_files = null;
 		try {
 			String query;
 			ResultSet rs;
@@ -667,13 +671,31 @@ public class DBConnection {
 						rs.getString(8));
 				notification.put(Constants.JSONKEYS.NOTIFICATIONS.BRANCH,
 						rs.getString(9));
+				
+				query_files = "select f.url,f.size from files as f join file_notification_map as fnm on f.id=fnm.file_id join notification as n"
+						+ " on n.id=fnm.notification_id where n.id ='"+rs.getString(5)+"'";
+				System.out.println(rs.getString(5));
+				Statement stm_files = conn.createStatement();
+				files=new JSONArray();
+				rs_files=stm_files.executeQuery(query_files);
+				while(rs_files.next()){
+					file=new JSONObject();
+					file.put(Constants.JSONKEYS.FILES.URL, rs_files.getString(1));
+					file.put(Constants.JSONKEYS.FILES.SIZE, rs_files.getString(2));
+					files.put(file);
+				//	System.out.println(file.toString());
+				}
+				rs_files.close();
+				
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS, files);
+				//System.out.println(query_files+"\n"+files.toString());
 				notifications.put(notification);
 			}
 			rs.close();
 		} catch (Exception e) {
 			Utility.debug(e);
 		}
-
+		System.out.print(notifications.toString());
 		return notifications;
 	}
 
