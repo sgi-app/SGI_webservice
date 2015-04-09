@@ -1,6 +1,5 @@
 package com.sgi.dao;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -272,7 +271,7 @@ public class DBConnection {
 				}
 				query.deleteCharAt(query.length() - 1);
 				PreparedStatement stm = conn.prepareStatement(query.toString());
-				File destination = Utility.getDestination();
+				String destination = Utility.getFileStoreBase();
 				int j = 1;
 				for (int i = 0; i < len_attachments; i++) {
 					attachment = attachments.getJSONObject(i);
@@ -681,7 +680,7 @@ public class DBConnection {
 				while(rs_files.next()){
 					file=new JSONObject();
 					file.put(Constants.JSONKEYS.FILES.URL, rs_files.getString(1));
-					file.put(Constants.JSONKEYS.FILES.SIZE, rs_files.getString(2));
+					file.put(Constants.JSONKEYS.FILES.SIZE, rs_files.getInt(2));
 					files.put(file);
 				//	System.out.println(file.toString());
 				}

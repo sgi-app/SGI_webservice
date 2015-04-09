@@ -1,11 +1,7 @@
 package com.sgi.util;
 
-import java.io.File;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-
-
-
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -209,10 +205,11 @@ public class Utility {
 		return fileName;
 	}
 	
-	public static File getDestination() {
-		File[] roots = File.listRoots();
-		File dir = new File(roots[0], "sgi_app/Files");												
-		return dir;
+	public static String getFileStoreBase() {
+		String path = System.getProperty("catalina.base");
+		path += "\\files";
+		LOG(path);
+		return path;
 	}
 	
 

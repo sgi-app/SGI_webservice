@@ -2,6 +2,7 @@ package com.sgi.webservice;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +18,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -31,9 +33,11 @@ import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.BodyPartEntity;
 import com.sun.jersey.multipart.MultiPart;
 
+//import com.sun.research.ws.wadl.Response;
+
 @Path("/query")
 public class QueryTypeHandler {
-	
+
 	@GET
 	@Path("/type_resolver")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -353,8 +357,7 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getFile(MultiPart multipart) throws IOException
-	{
+	public String getFile(MultiPart multipart) throws IOException {
 		DBConnection db = new DBConnection();
 		JSONObject jobj = new JSONObject();
 		JSONArray jsonarr = new JSONArray();
@@ -365,7 +368,7 @@ public class QueryTypeHandler {
 		StringBuilder strb = null;
 		BodyPart bp = null;
 		InputStream inputStream = null;
-		try {					
+		try {
 			List<BodyPart> bpl = multipart.getBodyParts();
 			int files = bpl.size();
 			byte[] bytes = new byte[1024];
@@ -399,21 +402,21 @@ public class QueryTypeHandler {
 			}
 			JSONArray attachments = new JSONArray(strb.toString());
 			Utility.LOG(attachments.toString());
-			ResultSet rs = db.fill_files(attachments, userid);	
+			ResultSet rs = db.fill_files(attachments, userid);
+			String path = Utility.getFileStoreBase();
+			File dir = new File(path);
 			for (int i = 2; i < files; i++) {
 				rs.next();
 				bp = bpl.get(i);
-				inputStream = ((BodyPartEntity) bp.getEntity()) 
+				inputStream = ((BodyPartEntity) bp.getEntity())
 						.getInputStream();
-				fileName = Utility.getFileName(bp);				
-				fileName = Utility.setFileName(fileName,rs.getInt(1));				
-				int read = 0;				
-				
-				File dir = Utility.getDestination();												
-				if(!dir.exists()){
+				fileName = Utility.getFileName(bp);
+				fileName = Utility.setFileName(fileName, rs.getInt(1));
+				int read = 0;
+				if (!dir.exists()) {
 					dir.mkdirs();
 				}
-				File file=new File(dir +"/"+ fileName);
+				File file = new File(dir + "/" + fileName);
 				out = new FileOutputStream(file);
 				try {
 					while ((read = inputStream.read(bytes)) != -1) {
@@ -427,7 +430,7 @@ public class QueryTypeHandler {
 				out.close();
 				inputStream.close();
 				jsonarr.put(rs.getInt(1));
-			}						
+			}
 			jobj.put(Constants.JSONKEYS.FILES.ID, jsonarr);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -435,6 +438,40 @@ public class QueryTypeHandler {
 			br.close();
 		}
 		return jobj.toString();
+	}
+
+	/**
+	 * Send the requested file to the user 
+	 * 
+	 * @param filename
+	 *            name of the file to be returned
+	 * @param userid
+	 * @param token
+	 * @return
+	 */
+	@GET
+	@Path("/download_file")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response sendFile(
+			@QueryParam(Constants.QueryParameters.FILES.NAME) String filename,
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token) {
+		DBConnection db = new DBConnection();
+		if (db.authorizeUser(userid, token)) {
+			try {
+				File file = new File(Utility.getFileStoreBase() + "\\"
+						+ filename);
+				return Response
+						.ok(file, MediaType.APPLICATION_OCTET_STREAM)
+						.header("Content-Disposition",
+								"attachment; filename=\"" + file.getName()
+										+ "\"").build();
+
+			} catch (NullPointerException e) {
+				Utility.debug(e);
+			}
+		}
+		return null;
 	}
 
 }
