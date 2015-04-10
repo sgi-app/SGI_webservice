@@ -280,13 +280,13 @@ public class DBConnection {
 		return file_count;
 	}
 
-	public void update_file(int file_id, long size) {
+	public void update_file(String original_file_name, int file_id, long size) {
 		try {
 			long time = System.currentTimeMillis() % 1000;
 
-			String str = "update files set url=concat(url,?), size=?,time=? where id=?";
+			String str = "update files set url=?, size=?,time=? where id=?";
 			PreparedStatement stm = conn.prepareStatement(str);
-			stm.setString(1, "_" + file_id);
+			stm.setString(1, Utility.setFileName(original_file_name, file_id));
 			stm.setLong(2, size);
 			stm.setLong(3, time);
 			stm.setInt(4, file_id);
@@ -503,7 +503,7 @@ public class DBConnection {
 								pstmt.setString(1, new_reg_id);
 								pstmt.setInt(2, gcm_rec.id);
 								pstmt.executeUpdate();
-								System.out.println("canonical id updated");
+								Utility.LOG("canonical id updated");
 							}
 							i++;
 						}
@@ -699,7 +699,7 @@ public class DBConnection {
 				query_files = "select f.url,f.size from files as f join file_notification_map as fnm on f.id=fnm.file_id join notification as n"
 						+ " on n.id=fnm.notification_id where n.id ='"
 						+ rs.getString(5) + "'";
-				System.out.println(rs.getString(5));
+				// System.out.println(rs.getString(5));
 				Statement stm_files = conn.createStatement();
 				files = new JSONArray();
 				rs_files = stm_files.executeQuery(query_files);
@@ -713,9 +713,10 @@ public class DBConnection {
 					// System.out.println(file.toString());
 				}
 				rs_files.close();
-
-				notification.put(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS,
-						files);
+				if (files.length() > 0)
+					notification
+							.put(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS,
+									files);
 				// System.out.println(query_files+"\n"+files.toString());
 				notifications.put(notification);
 			}
