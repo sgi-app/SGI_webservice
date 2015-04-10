@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.sql.ResultSet;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -33,7 +32,7 @@ import com.sun.jersey.multipart.MultiPart;
 
 @Path("/query")
 public class QueryTypeHandler {
-	
+
 	@GET
 	@Path("/type_resolver")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -353,19 +352,19 @@ public class QueryTypeHandler {
 	@Path("/upload_file")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getFile(MultiPart multipart) throws IOException
-	{
+	public String uploadFile(MultiPart multipart) throws IOException {
+		Utility.LOG("Uploading file hit");
 		DBConnection db = new DBConnection();
-		JSONObject jobj = new JSONObject();
 		JSONArray jsonarr = new JSONArray();
 		OutputStream out = null;
 		BufferedReader br = null;
 		String fileName = null;
-		String str = null;
+		String str = null, userid, token;
 		StringBuilder strb = null;
 		BodyPart bp = null;
+		int file_id;
 		InputStream inputStream = null;
-		try {					
+		try {
 			List<BodyPart> bpl = multipart.getBodyParts();
 			int files = bpl.size();
 			byte[] bytes = new byte[1024];
@@ -382,8 +381,8 @@ public class QueryTypeHandler {
 			} finally {
 				br.close();
 			}
-			String userid = new String(strb.toString());
-			Utility.LOG(userid.toString());
+			token = strb.toString();
+			Utility.LOG(" token " + token.toString());
 			bp = bpl.get(1);
 			strb = new StringBuilder();
 			inputStream = ((BodyPartEntity) bp.getEntity()).getInputStream();
@@ -397,44 +396,51 @@ public class QueryTypeHandler {
 			} finally {
 				br.close();
 			}
-			JSONArray attachments = new JSONArray(strb.toString());
-			Utility.LOG(attachments.toString());
-			ResultSet rs = db.fill_files(attachments, userid);	
-			for (int i = 2; i < files; i++) {
-				rs.next();
-				bp = bpl.get(i);
-				inputStream = ((BodyPartEntity) bp.getEntity()) 
-						.getInputStream();
-				fileName = Utility.getFileName(bp);				
-				fileName = Utility.setFileName(fileName,rs.getInt(1));				
-				int read = 0;				
-				
-				File dir = Utility.getDestination();												
-				if(!dir.exists()){
-					dir.mkdirs();
-				}
-				File file=new File(dir +"/"+ fileName);
-				out = new FileOutputStream(file);
-				try {
-					while ((read = inputStream.read(bytes)) != -1) {
-						out.write(bytes, 0, read);
+			userid = new String(strb.toString());
+			Utility.LOG(" user_id " + userid.toString());
+			if (db.authorizeUser(userid, token)) {
+				// JSONArray attachments = new JSONArray(strb.toString());
+				Utility.LOG("user_logged in now receiving file");
+				// ResultSet rs = db.fill_files(attachments, userid);
+				for (int i = 2; i < files; i++) {
+					bp = bpl.get(i);
+					inputStream = ((BodyPartEntity) bp.getEntity())
+							.getInputStream();
+					fileName = Utility.getFileName(bp);
+					file_id = db.fill_file(fileName);
+					fileName += ("_" + file_id);
+					// fileName = Utility.setFileName(fileName, rs.getInt(1));
+					int read = 0;
+
+					File dir = Utility.getDestination();
+					if (!dir.exists()) {
+						dir.mkdirs();
 					}
-					System.out.println(file.length());
-				} catch (Exception e) {
-					Utility.debug(e);
+					File file = new File(dir + "/" + fileName);
+					out = new FileOutputStream(file);
+					try {
+						while ((read = inputStream.read(bytes)) != -1) {
+							out.write(bytes, 0, read);
+						}
+
+					} catch (Exception e) {
+						Utility.debug(e);
+					}
+					out.flush();
+					out.close();
+					inputStream.close();
+					System.out.println("file written " + fileName);
+					// update table to append size of file
+					db.update_file(file_id, file.length());
+					jsonarr.put(file_id);
 				}
-				out.flush();
-				out.close();
-				inputStream.close();
-				jsonarr.put(rs.getInt(1));
-			}						
-			jobj.put(Constants.JSONKEYS.FILES.ID, jsonarr);
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Utility.debug(e);
 		} finally {
 			br.close();
 		}
-		return jobj.toString();
+		return jsonarr.toString();
 	}
 
 }

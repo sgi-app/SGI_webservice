@@ -1,6 +1,5 @@
 package com.sgi.dao;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -36,13 +35,13 @@ import com.sgi.util.Utility;
 import com.sgi.webservice.Login;
 
 public class DBConnection {
-	private static final boolean local=true;
+	private static final boolean local = true;
 	private Connection conn;
 	private String DB_CLASS = "com.mysql.jdbc.Driver";
-	private String DB_NAME = local?"sgi_app":"sgitomcat";
-	private String DB_USER = local?"root":"admindMLZJm1";
-	private String DB_PASSWORD = local?"praveen":"QFeAtrnl8U7t";
-	private String DB_HOST = local?"localhost":"127.12.169.130";
+	private String DB_NAME = local ? "sgi_app" : "sgitomcat";
+	private String DB_USER = local ? "root" : "admindMLZJm1";
+	private String DB_PASSWORD = local ? "1234" : "QFeAtrnl8U7t";
+	private String DB_HOST = local ? "localhost" : "127.12.169.130";
 	private String DB_PORT = "3306";
 
 	private String DB_URL = String.format("jdbc:mysql://%s:%s/%s", DB_HOST,
@@ -155,7 +154,7 @@ public class DBConnection {
 	 */
 	public JSONArray fillNotifications(JSONArray notifications, String userid) {
 		JSONArray noti_ids = new JSONArray();
-		
+
 		try {
 
 			int len = notifications.length();
@@ -177,11 +176,7 @@ public class DBConnection {
 				MapperEntry mapper_e = null;
 				ArrayList<MapperEntry> mapper_list = new ArrayList<MapperEntry>();
 				int target_id;
-				String query_countnoti = "select count(*) from notification";
-				Statement stm_countnoti = conn.createStatement();			
-				ResultSet rs_count = stm_countnoti.executeQuery(query_countnoti);
-				rs_count.next();
-				int count_noti = rs_count.getInt(1); 
+
 				for (int i = 0; i < len; i++) {
 					notification = notifications.getJSONObject(i);
 					// For user mapper
@@ -218,13 +213,14 @@ public class DBConnection {
 										.getInt(Constants.JSONKEYS.NOTIFICATIONS.FOR_FACULTY));
 						noti_ids.put(notification
 								.getInt(Constants.JSONKEYS.NOTIFICATIONS.ID));
-						fill_file_notification_map(count_noti+1,notification.getJSONObject(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS));					
-						count_noti++;
+
 					} else {
-						// if here there will be a problem as statement will be
-						// containing more ? then the actual values
-						// as we skipped some
-						// we should reject the whole operations
+						/**
+						 * if here there will be a problem as statement will be
+						 * containing more ? then the actual values as we
+						 * skipped some we should reject the whole operations
+						 */
+
 					}
 					j += 6;
 				}
@@ -233,7 +229,16 @@ public class DBConnection {
 					int i = 0;
 					while (rs.next()) {
 						fill_user_notification_map(mapper_list.get(i),
-								rs.getInt(1), sender_pk);						
+								rs.getInt(1), sender_pk);
+						if (notifications.getJSONObject(i).has(
+								Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS)) {
+							fill_file_notification_map(
+									rs.getInt(1),
+									notifications
+											.getJSONObject(i)
+											.getJSONArray(
+													Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS));
+						}
 						i++;
 					}
 				}
@@ -245,97 +250,98 @@ public class DBConnection {
 		return noti_ids;
 	}
 
-	public ResultSet fill_files(JSONArray attachments, String user_id) {
-		int sender_pk = getPKOfUser(user_id);
-		StringBuilder query = new StringBuilder(
-				"insert into files(url,owner,time,size) values");
-		String str = "(?,?,?,?)";
-		String file_name = null;
-		JSONObject attachment;
-		int len_attachments;
+	/**
+	 * @param original_file_name
+	 * @return
+	 */
+	/**
+	 * @param original_file_name
+	 * @return
+	 */
+	public int fill_file(String original_file_name) {
+		// int sender_pk = getPKOfUser(user_id);
+		String query = "insert into files(url) values('" + original_file_name
+				+ "')";
+
 		ResultSet rs = null;
 		int file_count = 0;
 		Statement stmt;
-		String query_count = "select count(*) from files";
 		try {
 			stmt = conn.createStatement();
-			rs = stmt.executeQuery(query_count);
+			stmt.execute(query, Statement.RETURN_GENERATED_KEYS);// uteQuery(query_count);
+			rs = stmt.getGeneratedKeys();
 			rs.next();
-			file_count = rs.getInt(1);			
-			rs=null;
-			len_attachments = attachments.length();
-			Utility.LOG("file count : " + file_count+"len_attachments: "+len_attachments);
-			if (len_attachments > 0) {
-				for (int a = 0; a < len_attachments; a++) {
-					query.append(str);
-					query.append(DbConstants.COMMA);
-				}
-				query.deleteCharAt(query.length() - 1);
-				PreparedStatement stm = conn.prepareStatement(query.toString());
-				File destination = Utility.getDestination();
-				int j = 1;
-				for (int i = 0; i < len_attachments; i++) {
-					attachment = attachments.getJSONObject(i);
-					file_name = Utility.setFileName(attachment.getString(Constants.JSONKEYS.FILES.NAME), file_count+1);					
-					stm.setString(j, destination +"\\" + file_name);
-					stm.setInt(j + 1, sender_pk);
-					stm.setLong(j + 2, attachment
-							.getLong(Constants.JSONKEYS.NOTIFICATIONS.TIME));
-					stm.setInt(j+3, attachment.getInt(Constants.JSONKEYS.FILES.SIZE));
-					j += 4;
-					file_count++;
-				}
-				Utility.LOG(stm.toString());
-				//stm.executeUpdate();
-				if (stm.executeUpdate() > 0) {
-					rs = stm.getGeneratedKeys();
-					/*
-					 * int i = 0; /= while (rs.next()) {
-					 * fill_file_notification_map(); i++;
-					 * 
-					 * }
-					 */
-				}
-			}
+			file_count = rs.getInt(1);
+			rs.close();
+
 		} catch (Exception e) {
 			Utility.debug(e);
 		}
-		return rs;
+		return file_count;
+	}
+
+	public void update_file(int file_id, long size) {
+		try {
+			long time = System.currentTimeMillis() % 1000;
+
+			String str = "update files set url=concat(url,?), size=?,time=? where id=?";
+			PreparedStatement stm = conn.prepareStatement(str);
+			stm.setString(1, "_" + file_id);
+			stm.setLong(2, size);
+			stm.setLong(3, time);
+			stm.setInt(4, file_id);
+			stm.executeUpdate();
+		} catch (Exception e) {
+			Utility.debug(e);
+		}
+
 	}
 
 	/**
-	 * file file notification map table for every notification with correspoding attachments
+	 * file file notification map table for every notification with correspoding
+	 * attachments
+	 * 
 	 * @param notification_id
 	 * @param attachments
 	 */
-	private void fill_file_notification_map(int notification_id, JSONObject attachments){
-		JSONArray attachment = new JSONArray();
-		PreparedStatement prep_stm;		
-		StringBuilder query = new StringBuilder("insert into file_notification_map(notification_id,file_id) values");
+	private void fill_file_notification_map(int notification_id,
+			JSONArray attachment) {
+
+		PreparedStatement prep_stm;
+		StringBuilder query = new StringBuilder(
+				"insert into file_notification_map(notification_id,file_id) values");
 		String new_values = "(?,?)";
-		int j = 1;
-		try{
-			attachment = attachments.getJSONArray(Constants.JSONKEYS.FILES.ID);
+
+		try {
+
 			int len = attachment.length();
 			for (int i = 0; i < len; i++) {
 				query.append(new_values);
 				query.append(DbConstants.COMMA);
 			}
 			query.deleteCharAt(query.length() - 1);
-			prep_stm  = conn.prepareStatement(query.toString());
-			for(int i=0;i<len;i++){
+			prep_stm = conn.prepareStatement(query.toString());
+			for (int i = 0, j = 1; i < len; i++, j += 2) {
 				prep_stm.setInt(j, notification_id);
-				prep_stm.setInt(j+1, attachment.getInt(i));
-				j+=2;
+				prep_stm.setInt(j + 1, attachment.getInt(i));
 			}
 			Utility.LOG(prep_stm.toString());
 			prep_stm.executeUpdate();
-		}catch(Exception e){
+		} catch (Exception e) {
 			Utility.debug(e);
 		}
 	}
-	
-	
+
+	private class GCMReceiver {
+		public GCMReceiver(String reg_id_, int id_) {
+			reg_id = reg_id_;
+			id = id_;
+		}
+
+		String reg_id;
+		int id;
+	}
+
 	/**
 	 * Fill the user_notification_map table with the target users of the
 	 * notification
@@ -350,7 +356,7 @@ public class DBConnection {
 		Statement stm;
 		PreparedStatement prep_stm;
 		String query_temp = null;
-		ArrayList<String> reg_ids = new ArrayList<String>();
+		ArrayList<GCMReceiver> gcm_receivers = new ArrayList<GCMReceiver>();
 		int rs_size, j = 1;
 
 		StringBuilder query_stud = new StringBuilder(
@@ -413,7 +419,8 @@ public class DBConnection {
 						prep_stm.setString(j + 2, rs.getString(2));
 						reg_id = rs.getString(3);
 						if (reg_id != null)
-							reg_ids.add(reg_id);
+							gcm_receivers.add(new GCMReceiver(reg_id, rs
+									.getInt(1)));
 						j += 3;
 					}
 					prep_stm.executeUpdate();
@@ -459,29 +466,46 @@ public class DBConnection {
 					prep_stm.setString(j + 2, rs.getString(2));
 					reg_id = rs.getString(3);
 					if (reg_id != null)
-						reg_ids.add(reg_id);
+						gcm_receivers
+								.add(new GCMReceiver(reg_id, rs.getInt(1)));
 					j += 3;
 				}
 				prep_stm.executeUpdate();
 				rs.close();
 			}
-			if (reg_ids.size() > 0) {
+			if (gcm_receivers.size() > 0) {
 				Utility.LOG("we have receivers");
 				Sender sender = new Sender(Utility.getSenderKey());
 				Message message = new Message.Builder().collapseKey(
 						"Notifications").build();
 				try {
+					ArrayList<String> reg_ids = new ArrayList<String>();
+					for (GCMReceiver gcmr : gcm_receivers)
+						reg_ids.add(gcmr.reg_id);
+
 					MulticastResult result = sender.send(message, reg_ids, 3);
+
 					if (result.getCanonicalIds() > 0) {
 						// update reg_ids
+						int i = 0;
+						String str = "update login set reg_id=? where id=?";
+						PreparedStatement pstmt;
 						for (Result msg_rs : result.getResults()) {
+
 							String new_reg_id = msg_rs
 									.getCanonicalRegistrationId();
 							if (new_reg_id != null) {
 								// update login set reg_id=new_reg_id where
-								System.out
-										.println("got canonical ids update them now");
+								// red_id=
+								// update this to new id;
+								GCMReceiver gcm_rec = gcm_receivers.get(i);
+								pstmt = conn.prepareStatement(str);
+								pstmt.setString(1, new_reg_id);
+								pstmt.setInt(2, gcm_rec.id);
+								pstmt.executeUpdate();
+								System.out.println("canonical id updated");
 							}
+							i++;
 						}
 					}
 				} catch (IOException e) {
@@ -671,24 +695,28 @@ public class DBConnection {
 						rs.getString(8));
 				notification.put(Constants.JSONKEYS.NOTIFICATIONS.BRANCH,
 						rs.getString(9));
-				
+
 				query_files = "select f.url,f.size from files as f join file_notification_map as fnm on f.id=fnm.file_id join notification as n"
-						+ " on n.id=fnm.notification_id where n.id ='"+rs.getString(5)+"'";
+						+ " on n.id=fnm.notification_id where n.id ='"
+						+ rs.getString(5) + "'";
 				System.out.println(rs.getString(5));
 				Statement stm_files = conn.createStatement();
-				files=new JSONArray();
-				rs_files=stm_files.executeQuery(query_files);
-				while(rs_files.next()){
-					file=new JSONObject();
-					file.put(Constants.JSONKEYS.FILES.URL, rs_files.getString(1));
-					file.put(Constants.JSONKEYS.FILES.SIZE, rs_files.getString(2));
+				files = new JSONArray();
+				rs_files = stm_files.executeQuery(query_files);
+				while (rs_files.next()) {
+					file = new JSONObject();
+					file.put(Constants.JSONKEYS.FILES.URL,
+							rs_files.getString(1));
+					file.put(Constants.JSONKEYS.FILES.SIZE,
+							rs_files.getString(2));
 					files.put(file);
-				//	System.out.println(file.toString());
+					// System.out.println(file.toString());
 				}
 				rs_files.close();
-				
-				notification.put(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS, files);
-				//System.out.println(query_files+"\n"+files.toString());
+
+				notification.put(Constants.JSONKEYS.NOTIFICATIONS.ATTACHMENTS,
+						files);
+				// System.out.println(query_files+"\n"+files.toString());
 				notifications.put(notification);
 			}
 			rs.close();
