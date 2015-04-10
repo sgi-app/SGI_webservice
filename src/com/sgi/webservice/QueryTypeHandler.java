@@ -16,6 +16,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -29,6 +30,8 @@ import com.sun.jersey.core.util.Base64;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.BodyPartEntity;
 import com.sun.jersey.multipart.MultiPart;
+
+//import com.sun.research.ws.wadl.Response;
 
 @Path("/query")
 public class QueryTypeHandler {
@@ -396,6 +399,7 @@ public class QueryTypeHandler {
 			} finally {
 				br.close();
 			}
+
 			userid = new String(strb.toString());
 			Utility.LOG(" user_id " + userid.toString());
 			if (db.authorizeUser(userid, token)) {
@@ -412,7 +416,7 @@ public class QueryTypeHandler {
 					// fileName = Utility.setFileName(fileName, rs.getInt(1));
 					int read = 0;
 
-					File dir = Utility.getDestination();
+					File dir = new File(Utility.getFileStoreBase());
 					if (!dir.exists()) {
 						dir.mkdirs();
 					}
@@ -425,6 +429,7 @@ public class QueryTypeHandler {
 
 					} catch (Exception e) {
 						Utility.debug(e);
+
 					}
 					out.flush();
 					out.close();
@@ -441,6 +446,40 @@ public class QueryTypeHandler {
 			br.close();
 		}
 		return jsonarr.toString();
+	}
+
+	/**
+	 * Send the requested file to the user 
+	 * 
+	 * @param filename
+	 *            name of the file to be returned
+	 * @param userid
+	 * @param token
+	 * @return
+	 */
+	@GET
+	@Path("/download_file")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response sendFile(
+			@QueryParam(Constants.QueryParameters.FILES.NAME) String filename,
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token) {
+		DBConnection db = new DBConnection();
+		if (db.authorizeUser(userid, token)) {
+			try {
+				File file = new File(Utility.getFileStoreBase() + "\\"
+						+ filename);
+				return Response
+						.ok(file, MediaType.APPLICATION_OCTET_STREAM)
+						.header("Content-Disposition",
+								"attachment; filename=\"" + file.getName()
+										+ "\"").build();
+
+			} catch (NullPointerException e) {
+				Utility.debug(e);
+			}
+		}
+		return null;
 	}
 
 }
