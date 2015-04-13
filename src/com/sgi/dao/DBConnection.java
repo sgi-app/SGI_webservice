@@ -786,7 +786,7 @@ public class DBConnection {
 		// System.out.print("authorizing user " + userid + " with token " +
 		// token);
 		userid = Utility.decode(userid);
-		token = Utility.decode(token);
+		token = Utility.decode(token);		
 		try {
 
 			String query = DbConstants.SELECT + "count(*)" + DbConstants.FROM

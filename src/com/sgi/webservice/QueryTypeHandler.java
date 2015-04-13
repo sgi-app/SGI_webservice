@@ -30,6 +30,7 @@ import com.sun.jersey.core.util.Base64;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.BodyPartEntity;
 import com.sun.jersey.multipart.MultiPart;
+import com.sun.research.ws.wadl.ParamStyle;
 
 //import com.sun.research.ws.wadl.Response;
 
@@ -361,84 +362,100 @@ public class QueryTypeHandler {
 		JSONArray jsonarr = new JSONArray();
 		OutputStream out = null;
 		BufferedReader br = null;
-		String fileName,original_file_name;
-		String str = null, userid, token;
+		String fileName, original_file_name;
+		String str = null, userid = null, token = null;
 		StringBuilder strb = null;
 		BodyPart bp = null;
 		int file_id;
 		InputStream inputStream = null;
+		String param_key = null;
 		try {
 			List<BodyPart> bpl = multipart.getBodyParts();
+			// System.out.println(multipart.getContentDisposition());
 			int files = bpl.size();
 			byte[] bytes = new byte[1024];
-			bp = bpl.get(0);
-			strb = new StringBuilder();
-			inputStream = ((BodyPartEntity) bp.getEntity()).getInputStream();
-			br = new BufferedReader(new InputStreamReader(inputStream));
-			try {
-				while ((str = br.readLine()) != null) {
-					strb.append(str);
-				}
-			} catch (IllegalStateException e) {
-				Utility.LOG("Reached end of stream");
-			} finally {
-				br.close();
-			}
-			token = strb.toString();
-			Utility.LOG(" token " + token.toString());
-			bp = bpl.get(1);
-			strb = new StringBuilder();
-			inputStream = ((BodyPartEntity) bp.getEntity()).getInputStream();
-			br = new BufferedReader(new InputStreamReader(inputStream));
-			try {
-				while ((str = br.readLine()) != null) {
-					strb.append(str);
-				}
-			} catch (IllegalStateException e) {
-				Utility.LOG("Reached end of stream");
-			} finally {
-				br.close();
-			}
-
-			userid = new String(strb.toString());
-			Utility.LOG(" user_id " + userid.toString());
-			if (db.authorizeUser(userid, token)) {
-				// JSONArray attachments = new JSONArray(strb.toString());
-				Utility.LOG("user_logged in now receiving file");
-				// ResultSet rs = db.fill_files(attachments, userid);
-				for (int i = 2; i < files; i++) {
-					bp = bpl.get(i);
+			// ruk karta thik ? ok7
+			// for(BodyPart bp:bpl){
+			for (int i = 0; i < files; i++) {
+				bp = bpl.get(i);
+				param_key = Utility.getContent(bp, "name");
+				if (param_key
+						.equalsIgnoreCase(Constants.QueryParameters.USERNAME)) {
+					strb = new StringBuilder(); // copt 1 starts :D
 					inputStream = ((BodyPartEntity) bp.getEntity())
 							.getInputStream();
-					original_file_name=fileName = Utility.getFileName(bp);
-					
-					file_id = db.fill_file(fileName);
-				//	fileName += ("_" + file_id);
-					fileName = Utility.setFileName(fileName, file_id);
-					int read = 0;
-
-					File dir = new File(Utility.getFileStoreBase());
-					if (!dir.exists()) {
-						dir.mkdirs();
-					}
-					File file = new File(dir + "/" + fileName);
-					out = new FileOutputStream(file);
+					br = new BufferedReader(new InputStreamReader(inputStream));
 					try {
-						while ((read = inputStream.read(bytes)) != -1) {
-							out.write(bytes, 0, read);
+						while ((str = br.readLine()) != null) {
+							strb.append(str);
 						}
+					} catch (IllegalStateException e) {
+						Utility.LOG("Reached end of stream");
+					} finally {
+						br.close();
+					}
+					userid = strb.toString();
+				}
+				if (param_key.equalsIgnoreCase(Constants.QueryParameters.TOKEN)) {
+					strb = new StringBuilder(); // copt 1 starts :D
+					inputStream = ((BodyPartEntity) bp.getEntity())
+							.getInputStream();
+					br = new BufferedReader(new InputStreamReader(inputStream));
+					try {
+						while ((str = br.readLine()) != null) {
+							strb.append(str);
+						}
+					} catch (IllegalStateException e) {
+						Utility.LOG("Reached end of stream");
+					} finally {
+						br.close();
+					}
+					token = strb.toString();
+				}
+				if ((userid != null) && (token != null))
+					break;
+			}			
+			Utility.LOG(" user_id " + userid.toString() + " token "
+					+ token.toString());
+			if (db.authorizeUser(userid, token)) {				
+				Utility.LOG("user_logged in now receiving file");				
+				for (int i = 0; i < files; i++) {
+					bp = bpl.get(i);
+					param_key = Utility.getContent(bp, "name");
+					if (param_key.equalsIgnoreCase(Constants.QueryParameters.FILE)) {
+						inputStream = ((BodyPartEntity) bp.getEntity())
+								.getInputStream();
+						original_file_name = fileName = Utility.getContent(bp,
+								"filename");						
+						file_id = db.fill_file(fileName);						
+						fileName = Utility.setFileName(fileName, file_id);
+						int read = 0;
 
-					} catch (Exception e) {
-						Utility.debug(e);
+						File dir = new File(Utility.getFileStoreBase());
+						if (!dir.exists()) {
+							dir.mkdirs();
+						}
+						File file = new File(dir + "/" + fileName);
+						out = new FileOutputStream(file);
+						try {
+							while ((read = inputStream.read(bytes)) != -1) {
+								out.write(bytes, 0, read);
+							}
+
+						} catch (Exception e) {
+							Utility.debug(e);
+
+						}
+						out.flush();
+						out.close();
+						inputStream.close();						
+						// update table to append size of file
+						db.update_file(original_file_name, file_id,
+								file.length());
+						jsonarr.put(file_id);
 
 					}
-					out.flush();
-					out.close();
-					inputStream.close();
-					//System.out.println("file written " + fileName);
-					// update table to append size of file
-					db.update_file(original_file_name,file_id, file.length());
-					jsonarr.put(file_id);
+
 				}
 			}
 		} catch (Exception e) {
@@ -468,16 +485,13 @@ public class QueryTypeHandler {
 		DBConnection db = new DBConnection();
 		if (db.authorizeUser(userid, token)) {
 			try {
-				File file = new File(Utility.getFileStoreBase() + "\\"
+				File file = new File(Utility.getFileStoreBase() 
 						+ filename);
-				//String file_name = file.getName();
-			//	file_name = file_name.substring(0, file_name.lastIndexOf("_"));
-			//	Utility.LOG("sending file name: " + file_name);
 				return Response
 						.ok(file, MediaType.APPLICATION_OCTET_STREAM)
 						.header("Content-Disposition",
-								"attachment; filename=\"" + file.getName() + "\"")
-						.build();
+								"attachment; filename=\"" + file.getName()
+										+ "\"").build();
 
 			} catch (NullPointerException e) {
 				Utility.debug(e);

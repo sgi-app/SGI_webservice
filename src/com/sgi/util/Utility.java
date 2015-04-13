@@ -167,50 +167,51 @@ public class Utility {
 	}
 
 	/**
-	 * get file name from the header of the bodypart
-	 * @param bp
-	 * @return String filename extracted from header 
+	 * sets the file name to be saved concatenates index in the file name index
+	 * contains file id
+	 * 
+	 * @param fileName
+	 * @param index
+	 * @return string filename
 	 */
-	
-	public static String getFileName(BodyPart bp) {
-		String filename = "";
+
+	public static String setFileName(String fileName, int index) {
+		int lastindexof = fileName.lastIndexOf(".");
+		String extenstion = fileName.substring(lastindexof);
+		String name = fileName.substring(0, lastindexof);
+		fileName = name + "_" + index + extenstion;
+		LOG("got filename=" + fileName + "\n" + name + "extend:" + extenstion);
+		return fileName;
+	}
+
+	public static String getFileStoreBase() {
+		String path = System.getenv("OPENSHIFT_DATA_DIR");
+		path += "files/";
+		// LOG(path);
+		return path;
+	}
+
+	/**
+	 * get content from the header of the bodypart
+	 * 
+	 * @param bp
+	 * @param startsWith
+	 * @return
+	 */
+	public static String getContent(BodyPart bp, String startsWith) {
+		String param_key = "";
 		MultivaluedMap<String, String> contentDisp = bp.getHeaders();
 		System.out.println(contentDisp);
 		String[] tokens = contentDisp.get("Content-Disposition").get(0)
 				.split(";");
 		for (String token : tokens) {
-			if (token.trim().startsWith("filename")) {
-				filename = token.substring(token.indexOf("=") + 2,
+			if (token.trim().startsWith(startsWith)) {
+				param_key = token.substring(token.indexOf("=") + 2,
 						token.length() - 1);
 				break;
 			}
 		}
-		return filename;
+		LOG(param_key);
+		return param_key;
 	}
-	/**
-	 * sets the file name to be saved
-	 * concatenates index in the file name
-	 * index contains file id
-	 * @param fileName
-	 * @param index
-	 * @return string filename
-	 */
-	
-	public static String setFileName(String fileName,int index) {		
-		int lastindexof = fileName.lastIndexOf(".");
-		String extenstion=fileName.substring(lastindexof); 
-		String name=fileName.substring(0, lastindexof);
-		fileName = name+"_"+index+extenstion;
-		Utility.LOG("got filename=" + fileName+ "\n" +name+ "extend:"+extenstion );
-		return fileName;
-	}
-	
-	public static String getFileStoreBase() {
-		String path = System.getProperty("catalina.base");
-		path += "\\files";
-		LOG(path);
-		return path;
-	}
-	
-
 }
