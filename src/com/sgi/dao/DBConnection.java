@@ -40,7 +40,7 @@ public class DBConnection {
 	private String DB_CLASS = "com.mysql.jdbc.Driver";
 	private String DB_NAME = local ? "sgi_app" : "sgitomcat";
 	private String DB_USER = local ? "root" : "admindMLZJm1";
-	private String DB_PASSWORD = local ? "1234" : "QFeAtrnl8U7t";
+	private String DB_PASSWORD = local ? "praveen" : "QFeAtrnl8U7t";
 	private String DB_HOST = local ? "localhost" : "127.12.169.130";
 	private String DB_PORT = "3306";
 
@@ -786,7 +786,7 @@ public class DBConnection {
 		// System.out.print("authorizing user " + userid + " with token " +
 		// token);
 		userid = Utility.decode(userid);
-		token = Utility.decode(token);
+		token = Utility.decode(token);		
 		try {
 
 			String query = DbConstants.SELECT + "count(*)" + DbConstants.FROM
