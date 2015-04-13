@@ -361,7 +361,7 @@ public class QueryTypeHandler {
 		JSONArray jsonarr = new JSONArray();
 		OutputStream out = null;
 		BufferedReader br = null;
-		String fileName,original_file_name;
+		String fileName, original_file_name;
 		String str = null, userid, token;
 		StringBuilder strb = null;
 		BodyPart bp = null;
@@ -410,10 +410,10 @@ public class QueryTypeHandler {
 					bp = bpl.get(i);
 					inputStream = ((BodyPartEntity) bp.getEntity())
 							.getInputStream();
-					original_file_name=fileName = Utility.getFileName(bp);
-					
+					original_file_name = fileName = Utility.getFileName(bp);
+
 					file_id = db.fill_file(fileName);
-				//	fileName += ("_" + file_id);
+					// fileName += ("_" + file_id);
 					fileName = Utility.setFileName(fileName, file_id);
 					int read = 0;
 
@@ -421,7 +421,7 @@ public class QueryTypeHandler {
 					if (!dir.exists()) {
 						dir.mkdirs();
 					}
-					File file = new File(dir + "/" + fileName);
+					File file = new File(dir + fileName);
 					out = new FileOutputStream(file);
 					try {
 						while ((read = inputStream.read(bytes)) != -1) {
@@ -435,9 +435,9 @@ public class QueryTypeHandler {
 					out.flush();
 					out.close();
 					inputStream.close();
-					//System.out.println("file written " + fileName);
+					// System.out.println("file written " + fileName);
 					// update table to append size of file
-					db.update_file(original_file_name,file_id, file.length());
+					db.update_file(original_file_name, file_id, file.length());
 					jsonarr.put(file_id);
 				}
 			}
@@ -468,16 +468,16 @@ public class QueryTypeHandler {
 		DBConnection db = new DBConnection();
 		if (db.authorizeUser(userid, token)) {
 			try {
-				File file = new File(Utility.getFileStoreBase() + "\\"
-						+ filename);
-				//String file_name = file.getName();
-			//	file_name = file_name.substring(0, file_name.lastIndexOf("_"));
-			//	Utility.LOG("sending file name: " + file_name);
+				File file = new File(Utility.getFileStoreBase() + filename);
+				// String file_name = file.getName();
+				// file_name = file_name.substring(0,
+				// file_name.lastIndexOf("_"));
+				// Utility.LOG("sending file name: " + file_name);
 				return Response
 						.ok(file, MediaType.APPLICATION_OCTET_STREAM)
 						.header("Content-Disposition",
-								"attachment; filename=\"" + file.getName() + "\"")
-						.build();
+								"attachment; filename=\"" + file.getName()
+										+ "\"").build();
 
 			} catch (NullPointerException e) {
 				Utility.debug(e);

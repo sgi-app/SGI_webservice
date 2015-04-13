@@ -168,10 +168,11 @@ public class Utility {
 
 	/**
 	 * get file name from the header of the bodypart
+	 * 
 	 * @param bp
-	 * @return String filename extracted from header 
+	 * @return String filename extracted from header
 	 */
-	
+
 	public static String getFileName(BodyPart bp) {
 		String filename = "";
 		MultivaluedMap<String, String> contentDisp = bp.getHeaders();
@@ -187,30 +188,37 @@ public class Utility {
 		}
 		return filename;
 	}
+
 	/**
-	 * sets the file name to be saved
-	 * concatenates index in the file name
-	 * index contains file id
+	 * sets the file name to be saved concatenates index in the file name index
+	 * contains file id
+	 * 
 	 * @param fileName
 	 * @param index
 	 * @return string filename
 	 */
-	
-	public static String setFileName(String fileName,int index) {		
+
+	public static String setFileName(String fileName, int index) {
 		int lastindexof = fileName.lastIndexOf(".");
-		String extenstion=fileName.substring(lastindexof); 
-		String name=fileName.substring(0, lastindexof);
-		fileName = name+"_"+index+extenstion;
-		Utility.LOG("got filename=" + fileName+ "\n" +name+ "extend:"+extenstion );
+		String extenstion = fileName.substring(lastindexof);
+		String name = fileName.substring(0, lastindexof);
+		fileName = name + "_" + index + extenstion;
+		Utility.LOG("got filename=" + fileName + "\n" + name + "extend:"
+				+ extenstion);
 		return fileName;
 	}
-	
+
 	public static String getFileStoreBase() {
-		String path = System.getProperty("catalina.base");
-		path += "\\files";
-		LOG(path);
+		LOG("path reqrested");
+		String path = "";
+		try {
+			path = System.getenv("OPENSHIFT_DATA_DIR")+"/files/";
+			LOG("returning -> " + path);
+		} catch (Exception e) {
+			LOG("error finding path");
+			debug(e);
+		}
 		return path;
 	}
-	
 
 }
