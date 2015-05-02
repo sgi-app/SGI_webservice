@@ -25,6 +25,7 @@ public interface Constants {
 		String FILE_NAME = "file_name";
 		String FILE_ID = "file_id";
 		String FILE = "file";
+		String NEW_PWD = "new_pwd";
 		public interface Notification {
 			String SUBJECT = "subject";
 			String BODY = "body";
@@ -117,6 +118,7 @@ public interface Constants {
 			String MSG_ACK = "MessageAcknoledgement";
 			String NOT_ACK = "NotificationAcknoledgement";
 			String ACKS = "MsgAndNotiAck";
+			String PWD_CHANGE="PswdChange";
 			String UPLOADING_NOTIFICATIONS = "UploadingNotifications";
 		}
 

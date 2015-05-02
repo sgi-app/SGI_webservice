@@ -499,4 +499,30 @@ public class QueryTypeHandler {
 		return null;
 	}
 
+	@GET
+	@Path("/pwd_change")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String pwdChange(
+			@QueryParam(Constants.QueryParameters.USERNAME) String userid,
+			@QueryParam(Constants.QueryParameters.TOKEN) String token,
+			@QueryParam(Constants.QueryParameters.NEW_PWD) String new_pwd) {
+		DBConnection db = new DBConnection();
+		JSONObject result = new JSONObject();
+		try {
+			result.put(Constants.JSONKEYS.TAG,
+					Constants.JSONKEYS.TAG_MSGS.PWD_CHANGE);
+			if (db.authorizeUser(userid, token)) {
+
+				result.put(
+						Constants.JSONKEYS.STATUS,
+						db.updatePassword(Utility.decode(userid),
+								Utility.decode(new_pwd)));
+
+			}
+		} catch (JSONException e) {
+			Utility.debug(e);
+		}
+		return result.toString();
+	}
+
 }
